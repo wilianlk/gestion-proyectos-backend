@@ -147,5 +147,104 @@ namespace ProjectManagementApi.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        /**
+        * Description: Update only UX Cases section fields
+        * Input Parameters: 
+        *      * projectCode (string): Project code to update
+        *      * dto (UpdateUxCasesSectionDto): UX Cases section data
+        * Output Parameters: None
+        */
+        public async Task UpdateUxCasesSectionAsync(string projectCode, UpdateUxCasesSectionDto dto)
+        {
+            var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
+            if (entity != null)
+            {
+                entity.UseCases = dto.UseCases;
+                entity.RequiredDiagrams = dto.RequiredDiagrams;
+                entity.ExperienceDesignMockups = dto.ExperienceDesignMockups;
+                entity.TargetUsers = dto.TargetUsers;
+                entity.UpdatedAt = DateTime.UtcNow;
+                // TODO: Update user context to get actual username instead of hardcoding
+                entity.Identification = "1234567890";
+                entity.Username = "dev";
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        /**
+        * Description: Update only Constraints section fields
+        * Input Parameters: 
+        *      * projectCode (string): Project code to update
+        *      * dto (UpdateConstraintsSectionDto): Constraints section data
+        * Output Parameters: None
+        */
+        public async Task UpdateConstraintsSectionAsync(string projectCode, UpdateConstraintsSectionDto dto)
+        {
+            var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
+            if (entity != null)
+            {
+                entity.EstimatedBudget = dto.EstimatedBudget;
+                entity.TargetDate = dto.TargetDate;
+                entity.TechnicalConstraints = dto.TechnicalConstraints;
+                entity.BusinessConstraints = dto.BusinessConstraints;
+                entity.RegulationsCompliance = dto.RegulationsCompliance;
+                entity.UpdatedAt = DateTime.UtcNow;
+                // TODO: Update user context to get actual username instead of hardcoding
+                entity.Identification = "1234567890";
+                entity.Username = "dev";
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        /**
+        * Description: Update only Areas and Integrations section fields
+        * Input Parameters: 
+        *      * projectCode (string): Project code to update
+        *      * dto (UpdateAreasIntegrationsSectionDto): Areas and Integrations section data
+        * Output Parameters: None
+        */
+        public async Task UpdateAreasIntegrationsSectionAsync(string projectCode, UpdateAreasIntegrationsSectionDto dto)
+        {
+            var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
+            if (entity != null)
+            {
+                entity.InvolvedAreas = dto.InvolvedAreas;
+                entity.OrganizationalImpact = dto.OrganizationalImpact;
+                entity.MasterDataMigration = dto.MasterDataMigration;
+                entity.UpdatedAt = DateTime.UtcNow;
+                // TODO: Update user context to get actual username instead of hardcoding
+                entity.Identification = "1234567890";
+                entity.Username = "dev";
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        /**
+        * Description: Update only RACI section fields
+        * Input Parameters: 
+        *      * projectCode (string): Project code to update
+        *      * dto (UpdateRaciSectionDto): RACI section data
+        * Output Parameters: None
+        */
+        public async Task UpdateRaciSectionAsync(string projectCode, UpdateRaciSectionDto dto)
+        {
+            var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
+            if (entity != null)
+            {
+                entity.ResponsibilitiesSummary = dto.ResponsibilitiesSummary;
+                entity.ChangeManagementAdoption = dto.ChangeManagementAdoption;
+                entity.OperationSupport = dto.OperationSupport;
+                entity.UpdatedAt = DateTime.UtcNow;
+                // TODO: Update user context to get actual username instead of hardcoding
+                entity.Identification = "1234567890";
+                entity.Username = "dev";
+
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

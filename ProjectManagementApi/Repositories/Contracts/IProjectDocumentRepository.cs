@@ -12,5 +12,9 @@ namespace ProjectManagementApi.Repositories
         public Task<bool> ExistsByProjectCodeAsync(string projectCode);
         public Task UpdateGeneralSectionAsync(string projectCode, UpdateProjectGeneralSectionDto dto);
         public Task UpdateArchitectureSectionAsync(string projectCode, UpdateArchitectureSectionDto dto);
+        public Task UpdateUxCasesSectionAsync(string projectCode, UpdateUxCasesSectionDto dto);
+        public Task UpdateConstraintsSectionAsync(string projectCode, UpdateConstraintsSectionDto dto);
+        public Task UpdateAreasIntegrationsSectionAsync(string projectCode, UpdateAreasIntegrationsSectionDto dto);
+        public Task UpdateRaciSectionAsync(string projectCode, UpdateRaciSectionDto dto);
     }
 }

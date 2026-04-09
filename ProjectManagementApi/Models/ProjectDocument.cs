@@ -69,6 +69,55 @@ namespace ProjectManagementApi.Models
         [Column("SlaResponseTime")]
         public string? SlaResponseTime { get; set; }
 
+        // Sección Casos y UX
+        [Column("UseCases")]
+        public string? UseCases { get; set; }
+
+        [Column("RequiredDiagrams")]
+        public string? RequiredDiagrams { get; set; }
+
+        [Column("ExperienceDesignMockups")]
+        public string? ExperienceDesignMockups { get; set; }
+
+        [Column("TargetUsers")]
+        public string? TargetUsers { get; set; }
+
+        // Sección Restricciones
+        [Column("EstimatedBudget")]
+        public string? EstimatedBudget { get; set; }
+
+        [Column("TargetDate")]
+        public DateTime? TargetDate { get; set; }
+
+        [Column("TechnicalConstraints")]
+        public string? TechnicalConstraints { get; set; }
+
+        [Column("BusinessConstraints")]
+        public string? BusinessConstraints { get; set; }
+
+        [Column("RegulationsCompliance")]
+        public string? RegulationsCompliance { get; set; }
+
+        // Sección Áreas e Integraciones
+        [Column("InvolvedAreas")]
+        public string? InvolvedAreas { get; set; }
+
+        [Column("OrganizationalImpact")]
+        public string? OrganizationalImpact { get; set; }
+
+        [Column("MasterDataMigration")]
+        public string? MasterDataMigration { get; set; }
+
+        // Sección RACI
+        [Column("ResponsibilitiesSummary")]
+        public string? ResponsibilitiesSummary { get; set; }
+
+        [Column("ChangeManagementAdoption")]
+        public string? ChangeManagementAdoption { get; set; }
+
+        [Column("OperationSupport")]
+        public string? OperationSupport { get; set; }
+
         [Column("Identification")]
         public string Identification { get; set; }
 

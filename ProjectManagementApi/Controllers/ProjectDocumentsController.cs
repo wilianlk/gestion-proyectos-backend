@@ -59,51 +59,14 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProjectDocumentDto>> GetByProjectCode(string projectCode)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+            var project = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(StringSanitizer.SanitizeForInformix(projectCode));
             if (project == null)
             {
                 return NotFound(new { message = $"Project with code '{projectCode}' not found" });
             }
 
-            var result = new ProjectDocumentDto
-            {
-                Id = project.Id,
-                ProjectCode = project.ProjectCode,
-                ProjectName = project.ProjectName,
-                Sponsor = project.Sponsor,
-                FunctionalLead = project.FunctionalLead,
-                TechnicalLead = project.TechnicalLead,
-                DocumentStatus = project.DocumentStatus,
-                ProjectVision = project.ProjectVision,
-                GeneralObjective = project.GeneralObjective,
-                SpecificObjectives = project.SpecificObjectives,
-                ExpectedValue = project.ExpectedValue,
-                Scope = project.Scope,
-                Exclusions = project.Exclusions,
-                SolutionDescription = project.SolutionDescription,
-                SolutionType = project.SolutionType,
-                DeploymentModel = project.DeploymentModel,
-                SoftwareStack = project.SoftwareStack,
-                HardwareArchitecture = project.HardwareArchitecture,
-                SecurityControl = project.SecurityControl,
-                ExpectedConcurrentUsers = project.ExpectedConcurrentUsers,
-                SlaResponseTime = project.SlaResponseTime,
-                CreatedAt = project.CreatedAt,
-                UpdatedAt = project.UpdatedAt,
-                Attachments = project.Attachments?.Select(a => new ProjectDocumentAttachmentDto
-                {
-                    Id = a.Id,
-                    ProjectDocumentId = a.ProjectDocumentId,
-                    Section = a.Section,
-                    FileName = a.FileName,
-                    FilePath = _fileService.GetFileUrl(a.FilePath),
-                    FileSize = a.FileSize,
-                    ContentType = a.ContentType,
-                    CreatedAt = a.CreatedAt,
-                    UpdatedAt = a.UpdatedAt
-                }).ToList() ?? new List<ProjectDocumentAttachmentDto>()
-            };
-
+            var result = MapToDto(project);
+            
             return Ok(result);
         }
 
@@ -194,6 +157,127 @@ namespace ProjectManagementApi.Controllers
                     });
                 }
             }
+
+            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+            return Ok(MapToDto(updatedProject));
+        }
+
+        /// <summary>
+        /// Method to update UX Cases section fields and upload attachments in a single request
+        /// </summary>
+        /// <param name="projectCode">Project code to update</param>
+        /// <param name="dto">UX Cases section data</param>
+        /// <param name="files">Optional attachments to upload</param>
+        /// <returns>Updated project with attachments</returns>
+        [HttpPut("{projectCode}/[action]")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ProjectDocumentDto>> UpdateUxCasesSection(
+            string projectCode, 
+            [FromForm] UpdateUxCasesSectionDto dto,
+            [FromForm] IFormFileCollection? files)
+        {
+            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+            if (project == null)
+            {
+                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+            }
+
+            await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto);
+
+            if (files != null && files.Count > 0)
+            {
+                foreach (var file in files)
+                {
+                    var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
+                    
+                    await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
+                    {
+                        ProjectDocumentId = project.Id,
+                        Section = "UxCases",
+                        FileName = file.FileName,
+                        FilePath = filePath,
+                        FileSize = file.Length,
+                        ContentType = file.ContentType
+                    });
+                }
+            }
+
+            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+            return Ok(MapToDto(updatedProject));
+        }
+
+        /// <summary>
+        /// Method to update Constraints section fields in a single request
+        /// </summary>
+        /// <param name="projectCode">Project code to update</param>
+        /// <param name="dto">Constraints section data</param>
+        /// <returns>Updated project</returns>
+        [HttpPut("{projectCode}/[action]")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProjectDocumentDto>> UpdateConstraintsSection(
+            string projectCode, 
+            [FromBody] UpdateConstraintsSectionDto dto)
+        {
+            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+            if (project == null)
+            {
+                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+            }
+
+            await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto);
+
+            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+            return Ok(MapToDto(updatedProject));
+        }
+
+        /// <summary>
+        /// Method to update Areas and Integrations section fields in a single request
+        /// </summary>
+        /// <param name="projectCode">Project code to update</param>
+        /// <param name="dto">Areas and Integrations section data</param>
+        /// <returns>Updated project</returns>
+        [HttpPut("{projectCode}/[action]")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProjectDocumentDto>> UpdateAreasIntegrationsSection(
+            string projectCode, 
+            [FromBody] UpdateAreasIntegrationsSectionDto dto)
+        {
+            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+            if (project == null)
+            {
+                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+            }
+
+            await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto);
+
+            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+            return Ok(MapToDto(updatedProject));
+        }
+
+        /// <summary>
+        /// Method to update RACI section fields in a single request
+        /// </summary>
+        /// <param name="projectCode">Project code to update</param>
+        /// <param name="dto">RACI section data</param>
+        /// <returns>Updated project</returns>
+        [HttpPut("{projectCode}/[action]")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProjectDocumentDto>> UpdateRaciSection(
+            string projectCode, 
+            [FromBody] UpdateRaciSectionDto dto)
+        {
+            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+            if (project == null)
+            {
+                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+            }
+
+            await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto);
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
             return Ok(MapToDto(updatedProject));
@@ -307,8 +391,28 @@ namespace ProjectManagementApi.Controllers
                 SecurityControl = project.SecurityControl,
                 ExpectedConcurrentUsers = project.ExpectedConcurrentUsers,
                 SlaResponseTime = project.SlaResponseTime,
+                // Casos y UX
+                UseCases = project.UseCases,
+                RequiredDiagrams = project.RequiredDiagrams,
+                ExperienceDesignMockups = project.ExperienceDesignMockups,
+                TargetUsers = project.TargetUsers,
+                // Restricciones
+                EstimatedBudget = project.EstimatedBudget,
+                TargetDate = project.TargetDate,
+                TechnicalConstraints = project.TechnicalConstraints,
+                BusinessConstraints = project.BusinessConstraints,
+                RegulationsCompliance = project.RegulationsCompliance,
+                // Áreas e Integraciones
+                InvolvedAreas = project.InvolvedAreas,
+                OrganizationalImpact = project.OrganizationalImpact,
+                MasterDataMigration = project.MasterDataMigration,
+                // RACI
+                ResponsibilitiesSummary = project.ResponsibilitiesSummary,
+                ChangeManagementAdoption = project.ChangeManagementAdoption,
+                OperationSupport = project.OperationSupport,
                 CreatedAt = project.CreatedAt,
                 UpdatedAt = project.UpdatedAt,
+                IsActive = project.IsActive,
                 Attachments = project.Attachments?.Select(a => new ProjectDocumentAttachmentDto
                 {
                     Id = a.Id,
@@ -320,8 +424,122 @@ namespace ProjectManagementApi.Controllers
                     ContentType = a.ContentType,
                     CreatedAt = a.CreatedAt,
                     UpdatedAt = a.UpdatedAt
-                }).ToList() ?? new List<ProjectDocumentAttachmentDto>()
+                }).ToList() ?? new List<ProjectDocumentAttachmentDto>(),
+
+                // Section Status
+                GeneralSectionStatus = CalculateGeneralSectionStatus(project),
+                ArchitectureSectionStatus = CalculateArchitectureSectionStatus(project),
+                UxCasesSectionStatus = CalculateUxCasesSectionStatus(project),
+                ConstraintsSectionStatus = CalculateConstraintsSectionStatus(project),
+                AreasIntegrationsSectionStatus = CalculateAreasIntegrationsSectionStatus(project),
+                RaciSectionStatus = CalculateRaciSectionStatus(project)
             };
+        }
+
+        private string CalculateGeneralSectionStatus(ProjectDocument project)
+        {
+            int totalFields = 11;
+            int filledFields = 0;
+
+            if (!string.IsNullOrEmpty(project.ProjectName)) filledFields++;
+            if (!string.IsNullOrEmpty(project.Sponsor)) filledFields++;
+            if (!string.IsNullOrEmpty(project.FunctionalLead)) filledFields++;
+            if (!string.IsNullOrEmpty(project.TechnicalLead)) filledFields++;
+            if (!string.IsNullOrEmpty(project.DocumentStatus)) filledFields++;
+            if (!string.IsNullOrEmpty(project.ProjectVision)) filledFields++;
+            if (!string.IsNullOrEmpty(project.GeneralObjective)) filledFields++;
+            if (!string.IsNullOrEmpty(project.SpecificObjectives)) filledFields++;
+            if (!string.IsNullOrEmpty(project.ExpectedValue)) filledFields++;
+            if (!string.IsNullOrEmpty(project.Scope)) filledFields++;
+            if (!string.IsNullOrEmpty(project.Exclusions)) filledFields++;
+
+            if (filledFields == 0) return "Pendiente";
+            if (filledFields == totalFields) return "Completo";
+            return "Incompleto";
+        }
+
+        private string CalculateArchitectureSectionStatus(ProjectDocument project)
+        {
+            int totalFields = 9;
+            int filledFields = 0;
+
+            if (!string.IsNullOrEmpty(project.SolutionDescription)) filledFields++;
+            if (!string.IsNullOrEmpty(project.SolutionType)) filledFields++;
+            if (!string.IsNullOrEmpty(project.DeploymentModel)) filledFields++;
+            if (!string.IsNullOrEmpty(project.SoftwareStack)) filledFields++;
+            if (!string.IsNullOrEmpty(project.HardwareArchitecture)) filledFields++;
+            if (!string.IsNullOrEmpty(project.SecurityControl)) filledFields++;
+            if (project.ExpectedConcurrentUsers.HasValue) filledFields++;
+            if (!string.IsNullOrEmpty(project.SlaResponseTime)) filledFields++;
+
+            bool hasAttachments = project.Attachments?.Any(a => a.Section == "Architecture") ?? false;
+            if (!hasAttachments) totalFields++;
+
+            if (filledFields == 0) return "Pendiente";
+            if (filledFields >= totalFields) return "Completo";
+            return "Incompleto";
+        }
+
+        private string CalculateUxCasesSectionStatus(ProjectDocument project)
+        {
+            int totalFields = 5;
+            int filledFields = 0;
+
+            if (!string.IsNullOrEmpty(project.UseCases)) filledFields++;
+            if (!string.IsNullOrEmpty(project.RequiredDiagrams)) filledFields++;
+            if (!string.IsNullOrEmpty(project.ExperienceDesignMockups)) filledFields++;
+            if (!string.IsNullOrEmpty(project.TargetUsers)) filledFields++;
+
+            bool hasAttachments = project.Attachments?.Any(a => a.Section == "UxCases") ?? false;
+            if (!hasAttachments) totalFields++;
+
+            if (filledFields == 0) return "Pendiente";
+            if (filledFields >= totalFields) return "Completo";
+            return "Incompleto";
+        }
+
+        private string CalculateConstraintsSectionStatus(ProjectDocument project)
+        {
+            int totalFields = 5;
+            int filledFields = 0;
+
+            if (!string.IsNullOrEmpty(project.EstimatedBudget)) filledFields++;
+            if (project.TargetDate.HasValue) filledFields++;
+            if (!string.IsNullOrEmpty(project.TechnicalConstraints)) filledFields++;
+            if (!string.IsNullOrEmpty(project.BusinessConstraints)) filledFields++;
+            if (!string.IsNullOrEmpty(project.RegulationsCompliance)) filledFields++;
+
+            if (filledFields == 0) return "Pendiente";
+            if (filledFields == totalFields) return "Completo";
+            return "Incompleto";
+        }
+
+        private string CalculateAreasIntegrationsSectionStatus(ProjectDocument project)
+        {
+            int totalFields = 3;
+            int filledFields = 0;
+
+            if (!string.IsNullOrEmpty(project.InvolvedAreas)) filledFields++;
+            if (!string.IsNullOrEmpty(project.OrganizationalImpact)) filledFields++;
+            if (!string.IsNullOrEmpty(project.MasterDataMigration)) filledFields++;
+
+            if (filledFields == 0) return "Pendiente";
+            if (filledFields == totalFields) return "Completo";
+            return "Incompleto";
+        }
+
+        private string CalculateRaciSectionStatus(ProjectDocument project)
+        {
+            int totalFields = 3;
+            int filledFields = 0;
+
+            if (!string.IsNullOrEmpty(project.ResponsibilitiesSummary)) filledFields++;
+            if (!string.IsNullOrEmpty(project.ChangeManagementAdoption)) filledFields++;
+            if (!string.IsNullOrEmpty(project.OperationSupport)) filledFields++;
+
+            if (filledFields == 0) return "Pendiente";
+            if (filledFields == totalFields) return "Completo";
+            return "Incompleto";
         }
     }
 }
