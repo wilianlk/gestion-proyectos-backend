@@ -44,6 +44,7 @@ Thumbs.db
 
 # Publish output
 publish/
+wwwroot/
 
 # JetBrains Rider caches
 .idea/

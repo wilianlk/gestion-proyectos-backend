@@ -16,6 +16,8 @@ namespace ProjectManagementApi.Context
         { }
 
         public DbSet<Menu> Menus { get; set; }
+        public DbSet<ProjectDocument> ProjectDocuments { get; set; }
+        public DbSet<ProjectDocumentAttachment> ProjectDocumentAttachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,6 +28,18 @@ namespace ProjectManagementApi.Context
                 entity.HasIndex(x => x.Name).IsUnique();
                 entity.HasOne(x => x.FirstParent).WithOne();
                 entity.HasOne(x => x.SecondParent).WithOne();
+            });
+
+            modelBuilder.Entity<ProjectDocument>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.ProjectCode).IsUnique();
+                entity.HasMany(x => x.Attachments).WithOne(a => a.ProjectDocument).HasForeignKey(x => x.ProjectDocumentId);
+            });
+
+            modelBuilder.Entity<ProjectDocumentAttachment>(entity =>
+            {
+                entity.HasKey(x => x.Id);
             });
 
             // init data

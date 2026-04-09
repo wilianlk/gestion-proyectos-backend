@@ -21,6 +21,9 @@ builder.Services.AddDbContext<ApplicationContext>();
 
 // Services
 builder.Services.AddScoped<IMenuRepository<Menu>, MenuRepository>();
+builder.Services.AddScoped<IProjectDocumentRepository<ProjectDocument>, ProjectDocumentRepository>();
+builder.Services.AddScoped<IProjectDocumentAttachmentRepository<ProjectDocumentAttachment>, ProjectDocumentAttachmentRepository>();
+builder.Services.AddScoped<IFileService, FileService>();
 
 builder.Services.AddHttpLogging(o => { });
 builder.Services.AddScoped<IDatabaseParametersService>(ServiceProvider => new DatabaseParametersService(
@@ -66,6 +69,7 @@ if (!app.Environment.IsProduction())
 }
 
 app.UseHttpLogging();
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.MapControllers();
 
