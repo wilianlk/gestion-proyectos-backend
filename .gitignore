@@ -24,7 +24,7 @@ project.fragment.lock.json
 artifacts/
 
 # ASP.NET temp files
-appsettings*.json
+*Local.json
 *.db
 *.db3
 
