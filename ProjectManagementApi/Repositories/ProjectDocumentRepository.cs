@@ -246,5 +246,18 @@ namespace ProjectManagementApi.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        /**
+        * Description: Get all project documents ordered by creation date (descending)
+        * Input Parameters: None
+        * Output Parameters: List of project documents
+        */
+        public async Task<List<ProjectDocument>> GetAllOrderedAsync()
+        {
+            return await _context.ProjectDocuments
+                .Include(x => x.Attachments)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
     }
 }

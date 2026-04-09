@@ -124,6 +124,6 @@ namespace ProjectManagementApi.Models
         [Column("Username")]
         public string Username { get; set; }
 
-        public ICollection<ProjectDocumentAttachment> Attachments { get; set; }
+        public ICollection<ProjectDocumentAttachment> Attachments { get; set; } = new List<ProjectDocumentAttachment>();
     }
 }

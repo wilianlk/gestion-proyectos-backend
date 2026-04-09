@@ -66,7 +66,19 @@ namespace ProjectManagementApi.Controllers
             }
 
             var result = MapToDto(project);
-            
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Method to get all project documents ordered by creation date (descending)
+        /// </summary>
+        /// <returns>List of project documents with section status</returns>
+        [HttpGet("[action]")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<ProjectDocumentListDto>>> GetAll()
+        {
+            var projects = await _projectDocumentRepository.GetAllOrderedAsync();
+            var result = projects.Select(MapToListDto).ToList();
             return Ok(result);
         }
 
@@ -473,7 +485,7 @@ namespace ProjectManagementApi.Controllers
             if (!string.IsNullOrEmpty(project.SlaResponseTime)) filledFields++;
 
             bool hasAttachments = project.Attachments?.Any(a => a.Section == "Architecture") ?? false;
-            if (!hasAttachments) totalFields++;
+            if (hasAttachments) filledFields++;
 
             if (filledFields == 0) return "Pendiente";
             if (filledFields >= totalFields) return "Completo";
@@ -491,7 +503,7 @@ namespace ProjectManagementApi.Controllers
             if (!string.IsNullOrEmpty(project.TargetUsers)) filledFields++;
 
             bool hasAttachments = project.Attachments?.Any(a => a.Section == "UxCases") ?? false;
-            if (!hasAttachments) totalFields++;
+            if (hasAttachments) filledFields++;
 
             if (filledFields == 0) return "Pendiente";
             if (filledFields >= totalFields) return "Completo";
@@ -540,6 +552,58 @@ namespace ProjectManagementApi.Controllers
             if (filledFields == 0) return "Pendiente";
             if (filledFields == totalFields) return "Completo";
             return "Incompleto";
+        }
+
+        private ProjectDocumentListDto MapToListDto(ProjectDocument project)
+        {
+            return new ProjectDocumentListDto
+            {
+                Id = project.Id,
+                ProjectCode = project.ProjectCode,
+                ProjectName = project.ProjectName,
+                Sponsor = project.Sponsor,
+                FunctionalLead = project.FunctionalLead,
+                TechnicalLead = project.TechnicalLead,
+                DocumentStatus = project.DocumentStatus,
+                ProjectVision = project.ProjectVision,
+                GeneralObjective = project.GeneralObjective,
+                SpecificObjectives = project.SpecificObjectives,
+                ExpectedValue = project.ExpectedValue,
+                Scope = project.Scope,
+                Exclusions = project.Exclusions,
+                SolutionDescription = project.SolutionDescription,
+                SolutionType = project.SolutionType,
+                DeploymentModel = project.DeploymentModel,
+                SoftwareStack = project.SoftwareStack,
+                HardwareArchitecture = project.HardwareArchitecture,
+                SecurityControl = project.SecurityControl,
+                ExpectedConcurrentUsers = project.ExpectedConcurrentUsers,
+                SlaResponseTime = project.SlaResponseTime,
+                UseCases = project.UseCases,
+                RequiredDiagrams = project.RequiredDiagrams,
+                ExperienceDesignMockups = project.ExperienceDesignMockups,
+                TargetUsers = project.TargetUsers,
+                EstimatedBudget = project.EstimatedBudget,
+                TargetDate = project.TargetDate,
+                TechnicalConstraints = project.TechnicalConstraints,
+                BusinessConstraints = project.BusinessConstraints,
+                RegulationsCompliance = project.RegulationsCompliance,
+                InvolvedAreas = project.InvolvedAreas,
+                OrganizationalImpact = project.OrganizationalImpact,
+                MasterDataMigration = project.MasterDataMigration,
+                ResponsibilitiesSummary = project.ResponsibilitiesSummary,
+                ChangeManagementAdoption = project.ChangeManagementAdoption,
+                OperationSupport = project.OperationSupport,
+                CreatedAt = project.CreatedAt,
+                UpdatedAt = project.UpdatedAt,
+                IsActive = project.IsActive,
+                GeneralSectionStatus = CalculateGeneralSectionStatus(project),
+                ArchitectureSectionStatus = CalculateArchitectureSectionStatus(project),
+                UxCasesSectionStatus = CalculateUxCasesSectionStatus(project),
+                ConstraintsSectionStatus = CalculateConstraintsSectionStatus(project),
+                AreasIntegrationsSectionStatus = CalculateAreasIntegrationsSectionStatus(project),
+                RaciSectionStatus = CalculateRaciSectionStatus(project)
+            };
         }
     }
 }

@@ -16,5 +16,6 @@ namespace ProjectManagementApi.Repositories
         public Task UpdateConstraintsSectionAsync(string projectCode, UpdateConstraintsSectionDto dto);
         public Task UpdateAreasIntegrationsSectionAsync(string projectCode, UpdateAreasIntegrationsSectionDto dto);
         public Task UpdateRaciSectionAsync(string projectCode, UpdateRaciSectionDto dto);
+        public Task<List<ProjectDocument>> GetAllOrderedAsync();
     }
 }

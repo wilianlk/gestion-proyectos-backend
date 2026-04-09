@@ -68,6 +68,12 @@ if (!app.Environment.IsProduction())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectManagementApi v1"));
 }
 
+app.UseCors(x =>
+    x.WithOrigins((builder.Configuration.GetSection("AllowedOrigins").Value ?? string.Empty).Split(";"))
+        .AllowCredentials().WithHeaders((builder.Configuration.GetSection("AllowedHeaders").Value ?? string.Empty).Split(";"))
+        .WithMethods((builder.Configuration.GetSection("AllowedMethods").Value ?? string.Empty).Split(";"))
+        .WithExposedHeaders("Content-Disposition"));
+
 app.UseHttpLogging();
 app.UseStaticFiles();
 app.UseHttpsRedirection();
