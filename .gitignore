@@ -1,0 +1,54 @@
+# Visual Studio
+.vs/
+/bin
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET temp files
+appsettings*.json
+*.db
+*.db3
+
+# Logs
+*.log
+
+# User-specific files
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Database driver artifacts
+**/clidriver/
+
+# Publish output
+publish/
+
+# JetBrains Rider caches
+.idea/
+*.sln.iml
+
+# VS Code settings
+.vscode/
+*.obj
