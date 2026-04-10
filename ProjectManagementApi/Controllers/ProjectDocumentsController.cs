@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
@@ -14,15 +15,19 @@ namespace ProjectManagementApi.Controllers
         private readonly IProjectDocumentRepository<ProjectDocument> _projectDocumentRepository;
         private readonly IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> _attachmentRepository;
         private readonly IFileService _fileService;
+        private readonly ILogger<ProjectDocumentsController> _logger;
+        private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
 
         public ProjectDocumentsController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
             IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> attachmentRepository,
-            IFileService fileService)
+            IFileService fileService,
+            ILogger<ProjectDocumentsController> logger)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _attachmentRepository = attachmentRepository;
             _fileService = fileService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -35,18 +40,26 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ProjectDocument>> Create([FromBody] CreateProjectDocumentDto dto)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
-            }
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
 
-            if (await _projectDocumentRepository.ExistsByProjectCodeAsync(dto.ProjectCode))
+                if (await _projectDocumentRepository.ExistsByProjectCodeAsync(dto.ProjectCode))
+                {
+                    return BadRequest(new { message = $"Project code '{dto.ProjectCode}' already exists" });
+                }
+
+                var created = await _projectDocumentRepository.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetByProjectCode), new { projectCode = created.ProjectCode }, created);
+            }
+            catch (Exception ex)
             {
-                return BadRequest(new { message = $"Project code '{dto.ProjectCode}' already exists" });
+                _logger.LogError(ex, "Error creando el documento de proyecto");
+                return BadRequest(new { message = DefaultErrorMessage });
             }
-
-            var created = await _projectDocumentRepository.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetByProjectCode), new { projectCode = created.ProjectCode }, created);
         }
 
         /// <summary>
@@ -59,14 +72,22 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProjectDocumentDto>> GetByProjectCode(string projectCode)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(StringSanitizer.SanitizeForInformix(projectCode));
-            if (project == null)
+            try
             {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-            }
+                var project = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                }
 
-            var result = MapToObject.MapToDto(project, _fileService);
-            return Ok(result);
+                var result = MapToObject.MapToDto(project, _fileService);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo el documento de proyecto con código {ProjectCode}", projectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
         /// <summary>
@@ -77,9 +98,17 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<List<ProjectDocumentListDto>>> GetAll()
         {
-            var projects = await _projectDocumentRepository.GetAllOrderedAsync();
-            var result = projects.Select(MapToList.MapToListDto).ToList();
-            return Ok(result);
+            try
+            {
+                var projects = await _projectDocumentRepository.GetAllOrderedAsync();
+                var result = projects.Select(MapToList.MapToListDto).ToList();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo la lista de documentos de proyecto");
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
         /// <summary>
@@ -98,34 +127,42 @@ namespace ProjectManagementApi.Controllers
             [FromForm] UpdateArchitectureSectionDto dto,
             [FromForm] IFormFileCollection? files)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-            if (project == null)
+            try
             {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-            }
-
-            await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto);
-
-            if (files != null && files.Count > 0)
-            {
-                foreach (var file in files)
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                if (project == null)
                 {
-                    var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture");
-                    
-                    await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
-                    {
-                        ProjectDocumentId = project.Id,
-                        Section = "Architecture",
-                        FileName = file.FileName,
-                        FilePath = filePath,
-                        FileSize = file.Length,
-                        ContentType = file.ContentType
-                    });
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
-            }
 
-            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+                await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto);
+
+                if (files != null && files.Count > 0)
+                {
+                    foreach (var file in files)
+                    {
+                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture");
+                        
+                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
+                        {
+                            ProjectDocumentId = project.Id,
+                            Section = "Architecture",
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            FileSize = file.Length,
+                            ContentType = file.ContentType
+                        });
+                    }
+                }
+
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando la sección de arquitectura para el documento de proyecto {ProjectCode}", projectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
         /// <summary>
@@ -144,34 +181,42 @@ namespace ProjectManagementApi.Controllers
             [FromForm] UpdateProjectGeneralSectionDto dto,
             [FromForm] IFormFileCollection? files)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-            if (project == null)
+            try
             {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-            }
-
-            await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto);
-
-            if (files != null && files.Count > 0)
-            {
-                foreach (var file in files)
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+                if (project == null)
                 {
-                    var filePath = await _fileService.UploadFileAsync(file, project.Id, "General");
-                    
-                    await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
-                    {
-                        ProjectDocumentId = project.Id,
-                        Section = "General",
-                        FileName = file.FileName,
-                        FilePath = filePath,
-                        FileSize = file.Length,
-                        ContentType = file.ContentType
-                    });
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
-            }
 
-            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+                await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto);
+
+                if (files != null && files.Count > 0)
+                {
+                    foreach (var file in files)
+                    {
+                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "General");
+                        
+                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
+                        {
+                            ProjectDocumentId = project.Id,
+                            Section = "General",
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            FileSize = file.Length,
+                            ContentType = file.ContentType
+                        });
+                    }
+                }
+
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando la sección general para el documento de proyecto {ProjectCode}", projectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
         /// <summary>
@@ -190,34 +235,42 @@ namespace ProjectManagementApi.Controllers
             [FromForm] UpdateUxCasesSectionDto dto,
             [FromForm] IFormFileCollection? files)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-            if (project == null)
+            try
             {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-            }
-
-            await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto);
-
-            if (files != null && files.Count > 0)
-            {
-                foreach (var file in files)
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+                if (project == null)
                 {
-                    var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
-                    
-                    await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
-                    {
-                        ProjectDocumentId = project.Id,
-                        Section = "UxCases",
-                        FileName = file.FileName,
-                        FilePath = filePath,
-                        FileSize = file.Length,
-                        ContentType = file.ContentType
-                    });
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
-            }
 
-            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+                await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto);
+
+                if (files != null && files.Count > 0)
+                {
+                    foreach (var file in files)
+                    {
+                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
+                        
+                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
+                        {
+                            ProjectDocumentId = project.Id,
+                            Section = "UxCases",
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            FileSize = file.Length,
+                            ContentType = file.ContentType
+                        });
+                    }
+                }
+
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando la sección UX para el documento de proyecto {ProjectCode}", projectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
         /// <summary>
@@ -233,16 +286,24 @@ namespace ProjectManagementApi.Controllers
             string projectCode, 
             [FromBody] UpdateConstraintsSectionDto dto)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-            if (project == null)
+            try
             {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                }
+
+                await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto);
+
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
-
-            await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto);
-
-            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando la sección de restricciones para el documento de proyecto {ProjectCode}", projectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
         /// <summary>
@@ -258,16 +319,24 @@ namespace ProjectManagementApi.Controllers
             string projectCode, 
             [FromBody] UpdateAreasIntegrationsSectionDto dto)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-            if (project == null)
+            try
             {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                }
+
+                await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto);
+
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
-
-            await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto);
-
-            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando la sección de áreas e integraciones para el documento de proyecto {ProjectCode}", projectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
         /// <summary>
@@ -283,16 +352,24 @@ namespace ProjectManagementApi.Controllers
             string projectCode, 
             [FromBody] UpdateRaciSectionDto dto)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-            if (project == null)
+            try
             {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                }
+
+                await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto);
+
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
-
-            await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto);
-
-            var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando la sección RACI para el documento de proyecto {ProjectCode}", projectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
         }
 
     }

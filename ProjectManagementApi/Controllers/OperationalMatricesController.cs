@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
@@ -15,17 +16,21 @@ namespace ProjectManagementApi.Controllers
         private readonly IProjectDocumentRequirementRepository<ProjectDocumentRequirement> _requirementRepository;
         private readonly IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> _integrationRepository;
         private readonly IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> _raciActorRepository;
+        private readonly ILogger<OperationalMatricesController> _logger;
+        private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
 
         public OperationalMatricesController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
             IProjectDocumentRequirementRepository<ProjectDocumentRequirement> requirementRepository,
             IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> integrationRepository,
-            IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> raciActorRepository)
+            IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> raciActorRepository,
+            ILogger<OperationalMatricesController> logger)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _requirementRepository = requirementRepository;
             _integrationRepository = integrationRepository;
             _raciActorRepository = raciActorRepository;
+            _logger = logger;
         }
 
         /// <summary>
@@ -38,49 +43,57 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<List<RequirementDto>>> UpsertRequirements([FromBody] CreateRequirementDto dto)
         {
-            if (dto.Requirements == null || dto.Requirements.Count == 0)
+            try
             {
-                return BadRequest(new { message = "No requirements provided" });
+                if (dto.Requirements == null || dto.Requirements.Count == 0)
+                {
+                    return BadRequest(new { message = "No requirements provided" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                }
+
+                await _requirementRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
+
+                var entities = dto.Requirements.Select(r => new ProjectDocumentRequirement
+                {
+                    ProjectDocumentId = project.Id,
+                    Code = r.Code,
+                    Description = r.Description,
+                    Type = r.Type,
+                    Priority = r.Priority,
+                    AcceptanceCriteria = r.AcceptanceCriteria,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    // TODO: Add user context to get actual username instead of hardcoding
+                    Identification = "1234567890",
+                    Username = "dev"
+                }).ToList();
+
+                _requirementRepository.AddRange(entities);
+                await _requirementRepository.SaveChangesAsync();
+
+                var result = entities.Select(e => new RequirementDto
+                {
+                    Id = e.Id,
+                    ProjectDocumentId = e.ProjectDocumentId,
+                    Code = e.Code,
+                    Description = e.Description,
+                    Type = e.Type,
+                    Priority = e.Priority,
+                    AcceptanceCriteria = e.AcceptanceCriteria
+                }).ToList();
+
+                return Ok(result);
             }
-
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-            if (project == null)
+            catch (Exception ex)
             {
-                return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                _logger.LogError(ex, "Error al crear o actualizar los requerimientos para el proyecto {ProjectCode}", dto.ProjectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
             }
-
-            await _requirementRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
-
-            var entities = dto.Requirements.Select(r => new ProjectDocumentRequirement
-            {
-                ProjectDocumentId = project.Id,
-                Code = r.Code,
-                Description = r.Description,
-                Type = r.Type,
-                Priority = r.Priority,
-                AcceptanceCriteria = r.AcceptanceCriteria,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                // TODO: Add user context to get actual username instead of hardcoding
-                Identification = "1234567890",
-                Username = "dev"
-            }).ToList();
-
-            _requirementRepository.AddRange(entities);
-            await _requirementRepository.SaveChangesAsync();
-
-            var result = entities.Select(e => new RequirementDto
-            {
-                Id = e.Id,
-                ProjectDocumentId = e.ProjectDocumentId,
-                Code = e.Code,
-                Description = e.Description,
-                Type = e.Type,
-                Priority = e.Priority,
-                AcceptanceCriteria = e.AcceptanceCriteria
-            }).ToList();
-
-            return Ok(result);
         }
 
         /// <summary>
@@ -93,43 +106,51 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<List<IntegrationDto>>> UpsertIntegrations([FromBody] CreateIntegrationDto dto)
         {
-            if (dto.Integrations == null || dto.Integrations.Count == 0)
+            try
             {
-                return BadRequest(new { message = "No integrations provided" });
+                if (dto.Integrations == null || dto.Integrations.Count == 0)
+                {
+                    return BadRequest(new { message = "No integrations provided" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                }
+
+                await _integrationRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
+
+                var entities = dto.Integrations.Select(i => new ProjectDocumentIntegration
+                {
+                    ProjectDocumentId = project.Id,
+                    System = i.System,
+                    Description = i.Description,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    // TODO: Add user context to get actual username instead of hardcoding
+                    Identification = "1234567890",
+                    Username = "dev"
+                }).ToList();
+
+                _integrationRepository.AddRange(entities);
+                await _integrationRepository.SaveChangesAsync();
+
+                var result = entities.Select(e => new IntegrationDto
+                {
+                    Id = e.Id,
+                    ProjectDocumentId = e.ProjectDocumentId,
+                    System = e.System,
+                    Description = e.Description
+                }).ToList();
+
+                return Ok(result);
             }
-
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-            if (project == null)
+            catch (Exception ex)
             {
-                return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                _logger.LogError(ex, "Error al crear o actualizar las integraciones para el proyecto {ProjectCode}", dto.ProjectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
             }
-
-            await _integrationRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
-
-            var entities = dto.Integrations.Select(i => new ProjectDocumentIntegration
-            {
-                ProjectDocumentId = project.Id,
-                System = i.System,
-                Description = i.Description,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                // TODO: Add user context to get actual username instead of hardcoding
-                Identification = "1234567890",
-                Username = "dev"
-            }).ToList();
-
-            _integrationRepository.AddRange(entities);
-            await _integrationRepository.SaveChangesAsync();
-
-            var result = entities.Select(e => new IntegrationDto
-            {
-                Id = e.Id,
-                ProjectDocumentId = e.ProjectDocumentId,
-                System = e.System,
-                Description = e.Description
-            }).ToList();
-
-            return Ok(result);
         }
 
         /// <summary>
@@ -142,47 +163,55 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<List<RaciActorDto>>> UpsertRaciActor([FromBody] CreateRaciActorDto dto)
         {
-            if (dto.Rows == null || dto.Rows.Count == 0)
+            try
             {
-                return BadRequest(new { message = "No RACI matrix rows provided" });
+                if (dto.Rows == null || dto.Rows.Count == 0)
+                {
+                    return BadRequest(new { message = "No RACI matrix rows provided" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                }
+
+                await _raciActorRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
+
+                var entities = dto.Rows.Select(a => new ProjectDocumentRaciActor
+                {
+                    ProjectDocumentId = project.Id,
+                    Activity = a.Activity,
+                    Type = a.Type,
+                    Area = a.Area,
+                    Role = a.Role,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    // TODO: Add user context to get actual username instead of hardcoding
+                    Identification = "1234567890",
+                    Username = "dev"
+                }).ToList();
+
+                _raciActorRepository.AddRange(entities);
+                await _raciActorRepository.SaveChangesAsync();
+
+                var result = entities.Select(e => new RaciActorDto
+                {
+                    Id = e.Id,
+                    ProjectDocumentId = e.ProjectDocumentId,
+                    Activity = e.Activity,
+                    Type = e.Type,
+                    Area = e.Area,
+                    Role = e.Role
+                }).ToList();
+
+                return Ok(result);
             }
-
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-            if (project == null)
+            catch (Exception ex)
             {
-                return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                _logger.LogError(ex, "Error al crear o actualizar los actores RACI para el proyecto {ProjectCode}", dto.ProjectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
             }
-
-            await _raciActorRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
-
-            var entities = dto.Rows.Select(a => new ProjectDocumentRaciActor
-            {
-                ProjectDocumentId = project.Id,
-                Activity = a.Activity,
-                Type = a.Type,
-                Area = a.Area,
-                Role = a.Role,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                // TODO: Add user context to get actual username instead of hardcoding
-                Identification = "1234567890",
-                Username = "dev"
-            }).ToList();
-
-            _raciActorRepository.AddRange(entities);
-            await _raciActorRepository.SaveChangesAsync();
-
-            var result = entities.Select(e => new RaciActorDto
-            {
-                Id = e.Id,
-                ProjectDocumentId = e.ProjectDocumentId,
-                Activity = e.Activity,
-                Type = e.Type,
-                Area = e.Area,
-                Role = e.Role
-            }).ToList();
-
-            return Ok(result);
         }
 
     }
