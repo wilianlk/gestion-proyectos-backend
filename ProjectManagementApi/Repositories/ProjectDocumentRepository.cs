@@ -2,7 +2,7 @@ using DatabasesLib;
 using ProjectManagementApi.Context;
 using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
-using ProjectManagementApi.Utils.Helpers;
+using ProjectManagementApi.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace ProjectManagementApi.Repositories

@@ -3,7 +3,7 @@ using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services.Contracts;
-using ProjectManagementApi.Utils.Helpers;
+using ProjectManagementApi.Utils;
 
 namespace ProjectManagementApi.Controllers
 {
@@ -13,15 +13,24 @@ namespace ProjectManagementApi.Controllers
     {
         private readonly IProjectDocumentRepository<ProjectDocument> _projectDocumentRepository;
         private readonly IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> _attachmentRepository;
+        private readonly IProjectDocumentRequirementRepository<ProjectDocumentRequirement> _requirementRepository;
+        private readonly IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> _integrationRepository;
+        private readonly IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> _raciActorRepository;
         private readonly IFileService _fileService;
 
         public ProjectDocumentsController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
             IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> attachmentRepository,
+            IProjectDocumentRequirementRepository<ProjectDocumentRequirement> requirementRepository,
+            IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> integrationRepository,
+            IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> raciActorRepository,
             IFileService fileService)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _attachmentRepository = attachmentRepository;
+            _requirementRepository = requirementRepository;
+            _integrationRepository = integrationRepository;
+            _raciActorRepository = raciActorRepository;
             _fileService = fileService;
         }
 
@@ -65,7 +74,7 @@ namespace ProjectManagementApi.Controllers
                 return NotFound(new { message = $"Project with code '{projectCode}' not found" });
             }
 
-            var result = MapToDto(project);
+            var result = MapToObject.MapToDto(project, _fileService);
             return Ok(result);
         }
 
@@ -78,7 +87,7 @@ namespace ProjectManagementApi.Controllers
         public async Task<ActionResult<List<ProjectDocumentListDto>>> GetAll()
         {
             var projects = await _projectDocumentRepository.GetAllOrderedAsync();
-            var result = projects.Select(MapToListDto).ToList();
+            var result = projects.Select(MapToList.MapToListDto).ToList();
             return Ok(result);
         }
 
@@ -125,7 +134,7 @@ namespace ProjectManagementApi.Controllers
             }
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToDto(updatedProject));
+            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
         }
 
         /// <summary>
@@ -171,7 +180,7 @@ namespace ProjectManagementApi.Controllers
             }
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToDto(updatedProject));
+            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
         }
 
         /// <summary>
@@ -217,7 +226,7 @@ namespace ProjectManagementApi.Controllers
             }
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToDto(updatedProject));
+            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
         }
 
         /// <summary>
@@ -242,7 +251,7 @@ namespace ProjectManagementApi.Controllers
             await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto);
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToDto(updatedProject));
+            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
         }
 
         /// <summary>
@@ -267,7 +276,7 @@ namespace ProjectManagementApi.Controllers
             await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto);
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToDto(updatedProject));
+            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
         }
 
         /// <summary>
@@ -292,318 +301,165 @@ namespace ProjectManagementApi.Controllers
             await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto);
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-            return Ok(MapToDto(updatedProject));
+            return Ok(MapToObject.MapToDto(updatedProject, _fileService));
         }
 
         /// <summary>
-        /// Method to upload multiple attachments for a project section
+        /// Method to create or update requerimientos for a project document
         /// </summary>
-        /// <param name="projectCode">Project code</param>
-        /// <param name="section">Section name (General, Architecture, etc.)</param>
-        /// <param name="files">Files to upload</param>
-        /// <returns>List of created attachments</returns>
-        [HttpPost("{projectCode}/[action]")]
+        /// <param name="dto">Requirements data</param>
+        /// <returns>Created requirements</returns>
+        [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<List<ProjectDocumentAttachmentDto>>> UploadAttachments(
-            string projectCode, 
-            [FromForm] string section, 
-            [FromForm] IFormFileCollection files)
+        public async Task<ActionResult<List<RequirementDto>>> UpsertRequirements([FromBody] CreateRequirementDto dto)
         {
-            var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+            if (dto.Requirements == null || dto.Requirements.Count == 0)
+            {
+                return BadRequest(new { message = "No requirements provided" });
+            }
+
+            var project = await _projectDocumentRepository.GetByIdAsync(dto.ProjectDocumentId);
             if (project == null)
             {
-                return BadRequest(new { message = $"Project with code '{projectCode}' not found" });
+                return BadRequest(new { message = $"Project document with id '{dto.ProjectDocumentId}' not found" });
             }
 
-            if (files == null || files.Count == 0)
+            await _requirementRepository.DeleteByProjectDocumentIdAsync(dto.ProjectDocumentId);
+
+            var entities = dto.Requirements.Select(r => new ProjectDocumentRequirement
             {
-                return BadRequest(new { message = "No files provided" });
-            }
+                ProjectDocumentId = dto.ProjectDocumentId,
+                Code = r.Code,
+                Description = r.Description,
+                Type = r.Type,
+                Priority = r.Priority,
+                AcceptanceCriteria = r.AcceptanceCriteria,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+                // TODO: Add user context to get actual username instead of hardcoding
+                Identification = "1234567890",
+                Username = "dev"
+            }).ToList();
 
-            var attachments = new List<ProjectDocumentAttachmentDto>();
-            
-            foreach (var file in files)
+            _requirementRepository.AddRange(entities);
+            await _requirementRepository.SaveChangesAsync();
+
+            var result = entities.Select(e => new RequirementDto
             {
-                var filePath = await _fileService.UploadFileAsync(file, project.Id, section);
-                
-                var attachment = await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
-                {
-                    ProjectDocumentId = project.Id,
-                    Section = section,
-                    FileName = file.FileName,
-                    FilePath = filePath,
-                    FileSize = file.Length,
-                    ContentType = file.ContentType
-                });
+                Id = e.Id,
+                ProjectDocumentId = e.ProjectDocumentId,
+                Code = e.Code,
+                Description = e.Description,
+                Type = e.Type,
+                Priority = e.Priority,
+                AcceptanceCriteria = e.AcceptanceCriteria
+            }).ToList();
 
-                attachments.Add(new ProjectDocumentAttachmentDto
-                {
-                    Id = attachment.Id,
-                    ProjectDocumentId = attachment.ProjectDocumentId,
-                    Section = attachment.Section,
-                    FileName = attachment.FileName,
-                    FilePath = _fileService.GetFileUrl(attachment.FilePath),
-                    FileSize = attachment.FileSize,
-                    ContentType = attachment.ContentType
-                });
-            }
-
-            return CreatedAtAction(nameof(GetByProjectCode), new { projectCode }, attachments);
+            return Ok(result);
         }
 
         /// <summary>
-        /// Method to delete an attachment
+        /// Method to create or update integrations for a project document
         /// </summary>
-        /// <param name="attachmentId">Attachment id to delete</param>
-        /// <returns>Success or failure</returns>
-        [HttpDelete("[action]")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteAttachment(int attachmentId)
+        /// <param name="dto">Integrations data</param>
+        /// <returns>Created integrations</returns>
+        [HttpPost("[action]")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<List<IntegrationDto>>> UpsertIntegrations([FromBody] CreateIntegrationDto dto)
         {
-            var allAttachments = await _attachmentRepository.GetAllAsync();
-            var attachment = allAttachments.FirstOrDefault(a => a.Id == attachmentId);
-            
-            if (attachment == null)
+            if (dto.Integrations == null || dto.Integrations.Count == 0)
             {
-                return NotFound(new { message = $"Attachment with id '{attachmentId}' not found" });
+                return BadRequest(new { message = "No integrations provided" });
             }
 
-            await _fileService.DeleteFileAsync(attachment.FilePath);
-            await _attachmentRepository.DeleteAttachmentAsync(attachmentId);
-
-            return Ok(new { message = "Attachment deleted successfully" });
-        }
-
-        private ProjectDocumentDto MapToDto(ProjectDocument? project)
-        {
-            if (project == null) return null;
-
-            return new ProjectDocumentDto
+            var project = await _projectDocumentRepository.GetByIdAsync(dto.ProjectDocumentId);
+            if (project == null)
             {
-                Id = project.Id,
-                ProjectCode = project.ProjectCode,
-                ProjectName = project.ProjectName,
-                Sponsor = project.Sponsor,
-                FunctionalLead = project.FunctionalLead,
-                TechnicalLead = project.TechnicalLead,
-                DocumentStatus = project.DocumentStatus,
-                ProjectVision = project.ProjectVision,
-                GeneralObjective = project.GeneralObjective,
-                SpecificObjectives = project.SpecificObjectives,
-                ExpectedValue = project.ExpectedValue,
-                Scope = project.Scope,
-                Exclusions = project.Exclusions,
-                SolutionDescription = project.SolutionDescription,
-                SolutionType = project.SolutionType,
-                DeploymentModel = project.DeploymentModel,
-                SoftwareStack = project.SoftwareStack,
-                HardwareArchitecture = project.HardwareArchitecture,
-                SecurityControl = project.SecurityControl,
-                ExpectedConcurrentUsers = project.ExpectedConcurrentUsers,
-                SlaResponseTime = project.SlaResponseTime,
-                // Casos y UX
-                UseCases = project.UseCases,
-                RequiredDiagrams = project.RequiredDiagrams,
-                ExperienceDesignMockups = project.ExperienceDesignMockups,
-                TargetUsers = project.TargetUsers,
-                // Restricciones
-                EstimatedBudget = project.EstimatedBudget,
-                TargetDate = project.TargetDate,
-                TechnicalConstraints = project.TechnicalConstraints,
-                BusinessConstraints = project.BusinessConstraints,
-                RegulationsCompliance = project.RegulationsCompliance,
-                // Áreas e Integraciones
-                InvolvedAreas = project.InvolvedAreas,
-                OrganizationalImpact = project.OrganizationalImpact,
-                MasterDataMigration = project.MasterDataMigration,
-                // RACI
-                ResponsibilitiesSummary = project.ResponsibilitiesSummary,
-                ChangeManagementAdoption = project.ChangeManagementAdoption,
-                OperationSupport = project.OperationSupport,
-                CreatedAt = project.CreatedAt,
-                UpdatedAt = project.UpdatedAt,
-                IsActive = project.IsActive,
-                Attachments = project.Attachments?.Select(a => new ProjectDocumentAttachmentDto
-                {
-                    Id = a.Id,
-                    ProjectDocumentId = a.ProjectDocumentId,
-                    Section = a.Section,
-                    FileName = a.FileName,
-                    FilePath = _fileService.GetFileUrl(a.FilePath),
-                    FileSize = a.FileSize,
-                    ContentType = a.ContentType,
-                    CreatedAt = a.CreatedAt,
-                    UpdatedAt = a.UpdatedAt
-                }).ToList() ?? new List<ProjectDocumentAttachmentDto>(),
+                return BadRequest(new { message = $"Project document with id '{dto.ProjectDocumentId}' not found" });
+            }
 
-                // Section Status
-                GeneralSectionStatus = CalculateGeneralSectionStatus(project),
-                ArchitectureSectionStatus = CalculateArchitectureSectionStatus(project),
-                UxCasesSectionStatus = CalculateUxCasesSectionStatus(project),
-                ConstraintsSectionStatus = CalculateConstraintsSectionStatus(project),
-                AreasIntegrationsSectionStatus = CalculateAreasIntegrationsSectionStatus(project),
-                RaciSectionStatus = CalculateRaciSectionStatus(project)
-            };
-        }
+            await _integrationRepository.DeleteByProjectDocumentIdAsync(dto.ProjectDocumentId);
 
-        private string CalculateGeneralSectionStatus(ProjectDocument project)
-        {
-            int totalFields = 11;
-            int filledFields = 0;
-
-            if (!string.IsNullOrEmpty(project.ProjectName)) filledFields++;
-            if (!string.IsNullOrEmpty(project.Sponsor)) filledFields++;
-            if (!string.IsNullOrEmpty(project.FunctionalLead)) filledFields++;
-            if (!string.IsNullOrEmpty(project.TechnicalLead)) filledFields++;
-            if (!string.IsNullOrEmpty(project.DocumentStatus)) filledFields++;
-            if (!string.IsNullOrEmpty(project.ProjectVision)) filledFields++;
-            if (!string.IsNullOrEmpty(project.GeneralObjective)) filledFields++;
-            if (!string.IsNullOrEmpty(project.SpecificObjectives)) filledFields++;
-            if (!string.IsNullOrEmpty(project.ExpectedValue)) filledFields++;
-            if (!string.IsNullOrEmpty(project.Scope)) filledFields++;
-            if (!string.IsNullOrEmpty(project.Exclusions)) filledFields++;
-
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields == totalFields) return "Completo";
-            return "Incompleto";
-        }
-
-        private string CalculateArchitectureSectionStatus(ProjectDocument project)
-        {
-            int totalFields = 9;
-            int filledFields = 0;
-
-            if (!string.IsNullOrEmpty(project.SolutionDescription)) filledFields++;
-            if (!string.IsNullOrEmpty(project.SolutionType)) filledFields++;
-            if (!string.IsNullOrEmpty(project.DeploymentModel)) filledFields++;
-            if (!string.IsNullOrEmpty(project.SoftwareStack)) filledFields++;
-            if (!string.IsNullOrEmpty(project.HardwareArchitecture)) filledFields++;
-            if (!string.IsNullOrEmpty(project.SecurityControl)) filledFields++;
-            if (project.ExpectedConcurrentUsers.HasValue) filledFields++;
-            if (!string.IsNullOrEmpty(project.SlaResponseTime)) filledFields++;
-
-            bool hasAttachments = project.Attachments?.Any(a => a.Section == "Architecture") ?? false;
-            if (hasAttachments) filledFields++;
-
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields >= totalFields) return "Completo";
-            return "Incompleto";
-        }
-
-        private string CalculateUxCasesSectionStatus(ProjectDocument project)
-        {
-            int totalFields = 5;
-            int filledFields = 0;
-
-            if (!string.IsNullOrEmpty(project.UseCases)) filledFields++;
-            if (!string.IsNullOrEmpty(project.RequiredDiagrams)) filledFields++;
-            if (!string.IsNullOrEmpty(project.ExperienceDesignMockups)) filledFields++;
-            if (!string.IsNullOrEmpty(project.TargetUsers)) filledFields++;
-
-            bool hasAttachments = project.Attachments?.Any(a => a.Section == "UxCases") ?? false;
-            if (hasAttachments) filledFields++;
-
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields >= totalFields) return "Completo";
-            return "Incompleto";
-        }
-
-        private string CalculateConstraintsSectionStatus(ProjectDocument project)
-        {
-            int totalFields = 5;
-            int filledFields = 0;
-
-            if (!string.IsNullOrEmpty(project.EstimatedBudget)) filledFields++;
-            if (project.TargetDate.HasValue) filledFields++;
-            if (!string.IsNullOrEmpty(project.TechnicalConstraints)) filledFields++;
-            if (!string.IsNullOrEmpty(project.BusinessConstraints)) filledFields++;
-            if (!string.IsNullOrEmpty(project.RegulationsCompliance)) filledFields++;
-
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields == totalFields) return "Completo";
-            return "Incompleto";
-        }
-
-        private string CalculateAreasIntegrationsSectionStatus(ProjectDocument project)
-        {
-            int totalFields = 3;
-            int filledFields = 0;
-
-            if (!string.IsNullOrEmpty(project.InvolvedAreas)) filledFields++;
-            if (!string.IsNullOrEmpty(project.OrganizationalImpact)) filledFields++;
-            if (!string.IsNullOrEmpty(project.MasterDataMigration)) filledFields++;
-
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields == totalFields) return "Completo";
-            return "Incompleto";
-        }
-
-        private string CalculateRaciSectionStatus(ProjectDocument project)
-        {
-            int totalFields = 3;
-            int filledFields = 0;
-
-            if (!string.IsNullOrEmpty(project.ResponsibilitiesSummary)) filledFields++;
-            if (!string.IsNullOrEmpty(project.ChangeManagementAdoption)) filledFields++;
-            if (!string.IsNullOrEmpty(project.OperationSupport)) filledFields++;
-
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields == totalFields) return "Completo";
-            return "Incompleto";
-        }
-
-        private ProjectDocumentListDto MapToListDto(ProjectDocument project)
-        {
-            return new ProjectDocumentListDto
+            var entities = dto.Integrations.Select(i => new ProjectDocumentIntegration
             {
-                Id = project.Id,
-                ProjectCode = project.ProjectCode,
-                ProjectName = project.ProjectName,
-                Sponsor = project.Sponsor,
-                FunctionalLead = project.FunctionalLead,
-                TechnicalLead = project.TechnicalLead,
-                DocumentStatus = project.DocumentStatus,
-                ProjectVision = project.ProjectVision,
-                GeneralObjective = project.GeneralObjective,
-                SpecificObjectives = project.SpecificObjectives,
-                ExpectedValue = project.ExpectedValue,
-                Scope = project.Scope,
-                Exclusions = project.Exclusions,
-                SolutionDescription = project.SolutionDescription,
-                SolutionType = project.SolutionType,
-                DeploymentModel = project.DeploymentModel,
-                SoftwareStack = project.SoftwareStack,
-                HardwareArchitecture = project.HardwareArchitecture,
-                SecurityControl = project.SecurityControl,
-                ExpectedConcurrentUsers = project.ExpectedConcurrentUsers,
-                SlaResponseTime = project.SlaResponseTime,
-                UseCases = project.UseCases,
-                RequiredDiagrams = project.RequiredDiagrams,
-                ExperienceDesignMockups = project.ExperienceDesignMockups,
-                TargetUsers = project.TargetUsers,
-                EstimatedBudget = project.EstimatedBudget,
-                TargetDate = project.TargetDate,
-                TechnicalConstraints = project.TechnicalConstraints,
-                BusinessConstraints = project.BusinessConstraints,
-                RegulationsCompliance = project.RegulationsCompliance,
-                InvolvedAreas = project.InvolvedAreas,
-                OrganizationalImpact = project.OrganizationalImpact,
-                MasterDataMigration = project.MasterDataMigration,
-                ResponsibilitiesSummary = project.ResponsibilitiesSummary,
-                ChangeManagementAdoption = project.ChangeManagementAdoption,
-                OperationSupport = project.OperationSupport,
-                CreatedAt = project.CreatedAt,
-                UpdatedAt = project.UpdatedAt,
-                IsActive = project.IsActive,
-                GeneralSectionStatus = CalculateGeneralSectionStatus(project),
-                ArchitectureSectionStatus = CalculateArchitectureSectionStatus(project),
-                UxCasesSectionStatus = CalculateUxCasesSectionStatus(project),
-                ConstraintsSectionStatus = CalculateConstraintsSectionStatus(project),
-                AreasIntegrationsSectionStatus = CalculateAreasIntegrationsSectionStatus(project),
-                RaciSectionStatus = CalculateRaciSectionStatus(project)
-            };
+                ProjectDocumentId = dto.ProjectDocumentId,
+                System = i.System,
+                Description = i.Description,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+                // TODO: Add user context to get actual username instead of hardcoding
+                Identification = "1234567890",
+                Username = "dev"
+            }).ToList();
+
+            _integrationRepository.AddRange(entities);
+            await _integrationRepository.SaveChangesAsync();
+
+            var result = entities.Select(e => new IntegrationDto
+            {
+                Id = e.Id,
+                ProjectDocumentId = e.ProjectDocumentId,
+                System = e.System,
+                Description = e.Description
+            }).ToList();
+
+            return Ok(result);
         }
+
+        /// <summary>
+        /// Method to create or update RACI actors for a project document
+        /// </summary>
+        /// <param name="dto">RACI Actors data</param>
+        /// <returns>Created RACI actors</returns>
+        [HttpPost("[action]")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<List<RaciActorDto>>> UpsertRaciActor([FromBody] CreateRaciActorDto dto)
+        {
+            if (dto.Rows == null || dto.Rows.Count == 0)
+            {
+                return BadRequest(new { message = "No RACI matrix rows provided" });
+            }
+
+            var project = await _projectDocumentRepository.GetByIdAsync(dto.ProjectDocumentId);
+            if (project == null)
+            {
+                return BadRequest(new { message = $"Project document with id '{dto.ProjectDocumentId}' not found" });
+            }
+
+            await _raciActorRepository.DeleteByProjectDocumentIdAsync(dto.ProjectDocumentId);
+
+            var entities = dto.Rows.Select(a => new ProjectDocumentRaciActor
+            {
+                ProjectDocumentId = dto.ProjectDocumentId,
+                Activity = a.Activity,
+                Type = a.Type,
+                Area = a.Area,
+                Role = a.Role,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+                // TODO: Add user context to get actual username instead of hardcoding
+                Identification = "1234567890",
+                Username = "dev"
+            }).ToList();
+
+            _raciActorRepository.AddRange(entities);
+            await _raciActorRepository.SaveChangesAsync();
+
+            var result = entities.Select(e => new RaciActorDto
+            {
+                Id = e.Id,
+                ProjectDocumentId = e.ProjectDocumentId,
+                Activity = e.Activity,
+                Type = e.Type,
+                Area = e.Area,
+                Role = e.Role
+            }).ToList();
+
+            return Ok(result);
+        }
+
     }
 }

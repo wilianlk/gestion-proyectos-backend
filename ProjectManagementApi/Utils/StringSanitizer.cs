@@ -1,4 +1,4 @@
-namespace ProjectManagementApi.Utils.Helpers
+namespace ProjectManagementApi.Utils
 {
     /// <summary>
     /// Utility class for sanitizing strings to ensure compatibility with Informix database

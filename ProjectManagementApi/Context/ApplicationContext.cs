@@ -18,6 +18,9 @@ namespace ProjectManagementApi.Context
         public DbSet<Menu> Menus { get; set; }
         public DbSet<ProjectDocument> ProjectDocuments { get; set; }
         public DbSet<ProjectDocumentAttachment> ProjectDocumentAttachments { get; set; }
+        public DbSet<ProjectDocumentRequirement> ProjectDocumentRequirements { get; set; }
+        public DbSet<ProjectDocumentIntegration> ProjectDocumentIntegrations { get; set; }
+        public DbSet<ProjectDocumentRaciActor> ProjectDocumentRaciActors { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,8 +45,23 @@ namespace ProjectManagementApi.Context
                 entity.HasKey(x => x.Id);
             });
 
-            // init data
-            // modelBuilder.Entity<Menu>().HasData(EntityData.GetMenus());
+            modelBuilder.Entity<ProjectDocumentRequirement>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
+            });
+
+            modelBuilder.Entity<ProjectDocumentIntegration>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
+            });
+
+            modelBuilder.Entity<ProjectDocumentRaciActor>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
+            });
 
             base.OnModelCreating(modelBuilder);
         }

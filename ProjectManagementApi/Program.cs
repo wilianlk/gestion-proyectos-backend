@@ -23,6 +23,9 @@ builder.Services.AddDbContext<ApplicationContext>();
 builder.Services.AddScoped<IMenuRepository<Menu>, MenuRepository>();
 builder.Services.AddScoped<IProjectDocumentRepository<ProjectDocument>, ProjectDocumentRepository>();
 builder.Services.AddScoped<IProjectDocumentAttachmentRepository<ProjectDocumentAttachment>, ProjectDocumentAttachmentRepository>();
+builder.Services.AddScoped<IProjectDocumentRequirementRepository<ProjectDocumentRequirement>, ProjectDocumentRequirementRepository>();
+builder.Services.AddScoped<IProjectDocumentIntegrationRepository<ProjectDocumentIntegration>, ProjectDocumentIntegrationRepository>();
+builder.Services.AddScoped<IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor>, ProjectDocumentRaciActorRepository>();
 builder.Services.AddScoped<IFileService, FileService>();
 
 builder.Services.AddHttpLogging(o => { });

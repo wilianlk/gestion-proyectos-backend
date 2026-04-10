@@ -1,0 +1,82 @@
+using ProjectManagementApi.DTO;
+using ProjectManagementApi.Models;
+using ProjectManagementApi.Services.Contracts;
+
+namespace ProjectManagementApi.Utils
+{
+    public static class MapToObject
+    {
+        public static ProjectDocumentDto? MapToDto(ProjectDocument? project, IFileService fileService)
+        {
+            if (project == null) return null;
+
+            return new ProjectDocumentDto
+            {
+                Id = project.Id,
+                ProjectCode = project.ProjectCode,
+                ProjectName = project.ProjectName,
+                Sponsor = project.Sponsor,
+                FunctionalLead = project.FunctionalLead,
+                TechnicalLead = project.TechnicalLead,
+                DocumentStatus = project.DocumentStatus,
+                ProjectVision = project.ProjectVision,
+                GeneralObjective = project.GeneralObjective,
+                SpecificObjectives = project.SpecificObjectives,
+                ExpectedValue = project.ExpectedValue,
+                Scope = project.Scope,
+                Exclusions = project.Exclusions,
+                SolutionDescription = project.SolutionDescription,
+                SolutionType = project.SolutionType,
+                DeploymentModel = project.DeploymentModel,
+                SoftwareStack = project.SoftwareStack,
+                HardwareArchitecture = project.HardwareArchitecture,
+                SecurityControl = project.SecurityControl,
+                ExpectedConcurrentUsers = project.ExpectedConcurrentUsers,
+                SlaResponseTime = project.SlaResponseTime,
+                // Casos y UX
+                UseCases = project.UseCases,
+                RequiredDiagrams = project.RequiredDiagrams,
+                ExperienceDesignMockups = project.ExperienceDesignMockups,
+                TargetUsers = project.TargetUsers,
+                // Restricciones
+                EstimatedBudget = project.EstimatedBudget,
+                TargetDate = project.TargetDate,
+                TechnicalConstraints = project.TechnicalConstraints,
+                BusinessConstraints = project.BusinessConstraints,
+                RegulationsCompliance = project.RegulationsCompliance,
+                // Áreas e Integraciones
+                InvolvedAreas = project.InvolvedAreas,
+                OrganizationalImpact = project.OrganizationalImpact,
+                MasterDataMigration = project.MasterDataMigration,
+                // RACI
+                ResponsibilitiesSummary = project.ResponsibilitiesSummary,
+                ChangeManagementAdoption = project.ChangeManagementAdoption,
+                OperationSupport = project.OperationSupport,
+                CreatedAt = project.CreatedAt,
+                UpdatedAt = project.UpdatedAt,
+                IsActive = project.IsActive,
+                Attachments = project.Attachments?.Select(a => new ProjectDocumentAttachmentDto
+                {
+                    Id = a.Id,
+                    ProjectDocumentId = a.ProjectDocumentId,
+                    Section = a.Section,
+                    FileName = a.FileName,
+                    FilePath = fileService.GetFileUrl(a.FilePath),
+                    FileSize = a.FileSize,
+                    ContentType = a.ContentType,
+                    CreatedAt = a.CreatedAt,
+                    UpdatedAt = a.UpdatedAt
+                }).ToList() ?? new List<ProjectDocumentAttachmentDto>(),
+
+                // Section Status
+                GeneralSectionStatus = CalculateStatus.CalculateGeneralSectionStatus(project),
+                ArchitectureSectionStatus = CalculateStatus.CalculateArchitectureSectionStatus(project),
+                UxCasesSectionStatus = CalculateStatus.CalculateUxCasesSectionStatus(project),
+                ConstraintsSectionStatus = CalculateStatus.CalculateConstraintsSectionStatus(project),
+                AreasIntegrationsSectionStatus = CalculateStatus.CalculateAreasIntegrationsSectionStatus(project),
+                RaciSectionStatus = CalculateStatus.CalculateRaciSectionStatus(project)
+            };
+        }
+        
+    }
+}
