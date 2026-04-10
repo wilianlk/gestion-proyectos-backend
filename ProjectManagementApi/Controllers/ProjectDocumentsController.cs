@@ -13,24 +13,15 @@ namespace ProjectManagementApi.Controllers
     {
         private readonly IProjectDocumentRepository<ProjectDocument> _projectDocumentRepository;
         private readonly IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> _attachmentRepository;
-        private readonly IProjectDocumentRequirementRepository<ProjectDocumentRequirement> _requirementRepository;
-        private readonly IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> _integrationRepository;
-        private readonly IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> _raciActorRepository;
         private readonly IFileService _fileService;
 
         public ProjectDocumentsController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
             IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> attachmentRepository,
-            IProjectDocumentRequirementRepository<ProjectDocumentRequirement> requirementRepository,
-            IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> integrationRepository,
-            IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> raciActorRepository,
             IFileService fileService)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _attachmentRepository = attachmentRepository;
-            _requirementRepository = requirementRepository;
-            _integrationRepository = integrationRepository;
-            _raciActorRepository = raciActorRepository;
             _fileService = fileService;
         }
 
@@ -302,163 +293,6 @@ namespace ProjectManagementApi.Controllers
 
             var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
             return Ok(MapToObject.MapToDto(updatedProject, _fileService));
-        }
-
-        /// <summary>
-        /// Method to create or update requerimientos for a project document
-        /// </summary>
-        /// <param name="dto">Requirements data</param>
-        /// <returns>Created requirements</returns>
-        [HttpPost("[action]")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<List<RequirementDto>>> UpsertRequirements([FromBody] CreateRequirementDto dto)
-        {
-            if (dto.Requirements == null || dto.Requirements.Count == 0)
-            {
-                return BadRequest(new { message = "No requirements provided" });
-            }
-
-            var project = await _projectDocumentRepository.GetByIdAsync(dto.ProjectDocumentId);
-            if (project == null)
-            {
-                return BadRequest(new { message = $"Project document with id '{dto.ProjectDocumentId}' not found" });
-            }
-
-            await _requirementRepository.DeleteByProjectDocumentIdAsync(dto.ProjectDocumentId);
-
-            var entities = dto.Requirements.Select(r => new ProjectDocumentRequirement
-            {
-                ProjectDocumentId = dto.ProjectDocumentId,
-                Code = r.Code,
-                Description = r.Description,
-                Type = r.Type,
-                Priority = r.Priority,
-                AcceptanceCriteria = r.AcceptanceCriteria,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                // TODO: Add user context to get actual username instead of hardcoding
-                Identification = "1234567890",
-                Username = "dev"
-            }).ToList();
-
-            _requirementRepository.AddRange(entities);
-            await _requirementRepository.SaveChangesAsync();
-
-            var result = entities.Select(e => new RequirementDto
-            {
-                Id = e.Id,
-                ProjectDocumentId = e.ProjectDocumentId,
-                Code = e.Code,
-                Description = e.Description,
-                Type = e.Type,
-                Priority = e.Priority,
-                AcceptanceCriteria = e.AcceptanceCriteria
-            }).ToList();
-
-            return Ok(result);
-        }
-
-        /// <summary>
-        /// Method to create or update integrations for a project document
-        /// </summary>
-        /// <param name="dto">Integrations data</param>
-        /// <returns>Created integrations</returns>
-        [HttpPost("[action]")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<List<IntegrationDto>>> UpsertIntegrations([FromBody] CreateIntegrationDto dto)
-        {
-            if (dto.Integrations == null || dto.Integrations.Count == 0)
-            {
-                return BadRequest(new { message = "No integrations provided" });
-            }
-
-            var project = await _projectDocumentRepository.GetByIdAsync(dto.ProjectDocumentId);
-            if (project == null)
-            {
-                return BadRequest(new { message = $"Project document with id '{dto.ProjectDocumentId}' not found" });
-            }
-
-            await _integrationRepository.DeleteByProjectDocumentIdAsync(dto.ProjectDocumentId);
-
-            var entities = dto.Integrations.Select(i => new ProjectDocumentIntegration
-            {
-                ProjectDocumentId = dto.ProjectDocumentId,
-                System = i.System,
-                Description = i.Description,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                // TODO: Add user context to get actual username instead of hardcoding
-                Identification = "1234567890",
-                Username = "dev"
-            }).ToList();
-
-            _integrationRepository.AddRange(entities);
-            await _integrationRepository.SaveChangesAsync();
-
-            var result = entities.Select(e => new IntegrationDto
-            {
-                Id = e.Id,
-                ProjectDocumentId = e.ProjectDocumentId,
-                System = e.System,
-                Description = e.Description
-            }).ToList();
-
-            return Ok(result);
-        }
-
-        /// <summary>
-        /// Method to create or update RACI actors for a project document
-        /// </summary>
-        /// <param name="dto">RACI Actors data</param>
-        /// <returns>Created RACI actors</returns>
-        [HttpPost("[action]")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<List<RaciActorDto>>> UpsertRaciActor([FromBody] CreateRaciActorDto dto)
-        {
-            if (dto.Rows == null || dto.Rows.Count == 0)
-            {
-                return BadRequest(new { message = "No RACI matrix rows provided" });
-            }
-
-            var project = await _projectDocumentRepository.GetByIdAsync(dto.ProjectDocumentId);
-            if (project == null)
-            {
-                return BadRequest(new { message = $"Project document with id '{dto.ProjectDocumentId}' not found" });
-            }
-
-            await _raciActorRepository.DeleteByProjectDocumentIdAsync(dto.ProjectDocumentId);
-
-            var entities = dto.Rows.Select(a => new ProjectDocumentRaciActor
-            {
-                ProjectDocumentId = dto.ProjectDocumentId,
-                Activity = a.Activity,
-                Type = a.Type,
-                Area = a.Area,
-                Role = a.Role,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-                // TODO: Add user context to get actual username instead of hardcoding
-                Identification = "1234567890",
-                Username = "dev"
-            }).ToList();
-
-            _raciActorRepository.AddRange(entities);
-            await _raciActorRepository.SaveChangesAsync();
-
-            var result = entities.Select(e => new RaciActorDto
-            {
-                Id = e.Id,
-                ProjectDocumentId = e.ProjectDocumentId,
-                Activity = e.Activity,
-                Type = e.Type,
-                Area = e.Area,
-                Role = e.Role
-            }).ToList();
-
-            return Ok(result);
         }
 
     }

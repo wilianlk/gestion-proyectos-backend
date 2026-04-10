@@ -21,10 +21,11 @@ namespace ProjectManagementApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task DeleteByProjectDocumentIdAsync(int projectDocumentId)
+        public async Task DeleteByProjectCodeAsync(string projectCode)
         {
             var entities = await _context.ProjectDocumentRequirements
-                .Where(x => x.ProjectDocumentId == projectDocumentId)
+            .Include(x => x.ProjectDocument)
+                .Where(x => x.ProjectDocument != null && x.ProjectDocument.ProjectCode == projectCode)
                 .ToListAsync();
             
             _context.ProjectDocumentRequirements.RemoveRange(entities);
