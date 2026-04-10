@@ -16,6 +16,8 @@ namespace ProjectManagementApi.Controllers
         private readonly IProjectDocumentRequirementRepository<ProjectDocumentRequirement> _requirementRepository;
         private readonly IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> _integrationRepository;
         private readonly IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> _raciActorRepository;
+        private readonly IProjectDocumentRiskRepository<ProjectDocumentRisk> _riskRepository;
+        private readonly IProjectDocumentTestCaseRepository<ProjectDocumentTestCase> _testCaseRepository;
         private readonly ILogger<OperationalMatricesController> _logger;
         private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
 
@@ -24,12 +26,16 @@ namespace ProjectManagementApi.Controllers
             IProjectDocumentRequirementRepository<ProjectDocumentRequirement> requirementRepository,
             IProjectDocumentIntegrationRepository<ProjectDocumentIntegration> integrationRepository,
             IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> raciActorRepository,
+            IProjectDocumentRiskRepository<ProjectDocumentRisk> riskRepository,
+            IProjectDocumentTestCaseRepository<ProjectDocumentTestCase> testCaseRepository,
             ILogger<OperationalMatricesController> logger)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _requirementRepository = requirementRepository;
             _integrationRepository = integrationRepository;
             _raciActorRepository = raciActorRepository;
+            _riskRepository = riskRepository;
+            _testCaseRepository = testCaseRepository;
             _logger = logger;
         }
 
@@ -210,6 +216,126 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al crear o actualizar los actores RACI para el proyecto {ProjectCode}", dto.ProjectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
+        }
+
+        /// <summary>
+        /// Method to create or update risks for a project document
+        /// </summary>
+        /// <param name="dto">Risks data</param>
+        /// <returns>Created risks</returns>
+        [HttpPost("[action]")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<List<RiskDto>>> UpsertRisks([FromBody] CreateRiskDto dto)
+        {
+            try
+            {
+                if (dto.Risks == null || dto.Risks.Count == 0)
+                {
+                    return BadRequest(new { message = "No risks provided" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                }
+
+                await _riskRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
+
+                var entities = dto.Risks.Select(r => new ProjectDocumentRisk
+                {
+                    ProjectDocumentId = project.Id,
+                    Risk = r.Risk,
+                    Impact = r.Impact,
+                    Probability = r.Probability,
+                    Mitigation = r.Mitigation,
+                    Owner = r.Owner,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    Identification = "1234567890",
+                    Username = "dev"
+                }).ToList();
+
+                _riskRepository.AddRange(entities);
+                await _riskRepository.SaveChangesAsync();
+
+                var result = entities.Select(e => new RiskDto
+                {
+                    Id = e.Id,
+                    ProjectDocumentId = e.ProjectDocumentId,
+                    Risk = e.Risk,
+                    Impact = e.Impact,
+                    Probability = e.Probability,
+                    Mitigation = e.Mitigation,
+                    Owner = e.Owner
+                }).ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear o actualizar los riesgos para el proyecto {ProjectCode}", dto.ProjectCode);
+                return BadRequest(new { message = DefaultErrorMessage });
+            }
+        }
+
+        /// <summary>
+        /// Method to create or update test cases for a project document
+        /// </summary>
+        /// <param name="dto">Test cases data</param>
+        /// <returns>Created test cases</returns>
+        [HttpPost("[action]")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<List<TestCaseDto>>> UpsertTestCases([FromBody] CreateTestCaseDto dto)
+        {
+            try
+            {
+                if (dto.TestCases == null || dto.TestCases.Count == 0)
+                {
+                    return BadRequest(new { message = "No test cases provided" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                }
+
+                await _testCaseRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
+
+                var entities = dto.TestCases.Select(t => new ProjectDocumentTestCase
+                {
+                    ProjectDocumentId = project.Id,
+                    TestStrategy = t.TestStrategy,
+                    AcceptanceCriteria = t.AcceptanceCriteria,
+                    DeployProductionCriteria = t.DeployProductionCriteria,
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    Identification = "1234567890",
+                    Username = "dev"
+                }).ToList();
+
+                _testCaseRepository.AddRange(entities);
+                await _testCaseRepository.SaveChangesAsync();
+
+                var result = entities.Select(e => new TestCaseDto
+                {
+                    Id = e.Id,
+                    ProjectDocumentId = e.ProjectDocumentId,
+                    TestStrategy = e.TestStrategy,
+                    AcceptanceCriteria = e.AcceptanceCriteria,
+                    DeployProductionCriteria = e.DeployProductionCriteria
+                }).ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear o actualizar los casos de prueba para el proyecto {ProjectCode}", dto.ProjectCode);
                 return BadRequest(new { message = DefaultErrorMessage });
             }
         }

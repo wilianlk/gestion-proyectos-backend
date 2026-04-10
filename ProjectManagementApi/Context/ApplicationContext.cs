@@ -20,6 +20,8 @@ namespace ProjectManagementApi.Context
         public DbSet<ProjectDocumentRequirement> ProjectDocumentRequirements { get; set; }
         public DbSet<ProjectDocumentIntegration> ProjectDocumentIntegrations { get; set; }
         public DbSet<ProjectDocumentRaciActor> ProjectDocumentRaciActors { get; set; }
+        public DbSet<ProjectDocumentRisk> ProjectDocumentRisks { get; set; }
+        public DbSet<ProjectDocumentTestCase> ProjectDocumentTestCases { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,6 +52,18 @@ namespace ProjectManagementApi.Context
             });
 
             modelBuilder.Entity<ProjectDocumentRaciActor>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
+            });
+
+            modelBuilder.Entity<ProjectDocumentRisk>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
+            });
+
+            modelBuilder.Entity<ProjectDocumentTestCase>(entity =>
             {
                 entity.HasKey(x => x.Id);
                 entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);

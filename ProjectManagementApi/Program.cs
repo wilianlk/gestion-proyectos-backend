@@ -9,7 +9,7 @@ using ProjectManagementApi.Services.Contracts;
 using ProjectManagementApi.Utils.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Logging.AddConsole();
 ConfigurationManager configuration = builder.Configuration;
 
 var appSettingsSection = configuration.GetSection("AppSettings");
@@ -25,6 +25,8 @@ builder.Services.AddScoped<IProjectDocumentAttachmentRepository<ProjectDocumentA
 builder.Services.AddScoped<IProjectDocumentRequirementRepository<ProjectDocumentRequirement>, ProjectDocumentRequirementRepository>();
 builder.Services.AddScoped<IProjectDocumentIntegrationRepository<ProjectDocumentIntegration>, ProjectDocumentIntegrationRepository>();
 builder.Services.AddScoped<IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor>, ProjectDocumentRaciActorRepository>();
+builder.Services.AddScoped<IProjectDocumentRiskRepository<ProjectDocumentRisk>, ProjectDocumentRiskRepository>();
+builder.Services.AddScoped<IProjectDocumentTestCaseRepository<ProjectDocumentTestCase>, ProjectDocumentTestCaseRepository>();
 builder.Services.AddScoped<IFileService, FileService>();
 
 builder.Services.AddHttpLogging(o => { });
