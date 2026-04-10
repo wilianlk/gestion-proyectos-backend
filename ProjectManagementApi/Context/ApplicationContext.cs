@@ -15,7 +15,6 @@ namespace ProjectManagementApi.Context
          )
         { }
 
-        public DbSet<Menu> Menus { get; set; }
         public DbSet<ProjectDocument> ProjectDocuments { get; set; }
         public DbSet<ProjectDocumentAttachment> ProjectDocumentAttachments { get; set; }
         public DbSet<ProjectDocumentRequirement> ProjectDocumentRequirements { get; set; }
@@ -25,13 +24,6 @@ namespace ProjectManagementApi.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // init entities
-            modelBuilder.Entity<Menu>(entity =>
-            {
-                entity.HasKey(x => x.Id);
-                entity.HasIndex(x => x.Name).IsUnique();
-                entity.HasOne(x => x.FirstParent).WithOne();
-                entity.HasOne(x => x.SecondParent).WithOne();
-            });
 
             modelBuilder.Entity<ProjectDocument>(entity =>
             {

@@ -20,7 +20,6 @@ var appSettings = appSettingsSection.Get<AppSettings>();
 builder.Services.AddDbContext<ApplicationContext>();
 
 // Services
-builder.Services.AddScoped<IMenuRepository<Menu>, MenuRepository>();
 builder.Services.AddScoped<IProjectDocumentRepository<ProjectDocument>, ProjectDocumentRepository>();
 builder.Services.AddScoped<IProjectDocumentAttachmentRepository<ProjectDocumentAttachment>, ProjectDocumentAttachmentRepository>();
 builder.Services.AddScoped<IProjectDocumentRequirementRepository<ProjectDocumentRequirement>, ProjectDocumentRequirementRepository>();
