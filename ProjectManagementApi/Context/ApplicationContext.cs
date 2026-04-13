@@ -22,6 +22,8 @@ namespace ProjectManagementApi.Context
         public DbSet<ProjectDocumentRaciActor> ProjectDocumentRaciActors { get; set; }
         public DbSet<ProjectDocumentRisk> ProjectDocumentRisks { get; set; }
         public DbSet<ProjectDocumentTestCase> ProjectDocumentTestCases { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,6 +69,17 @@ namespace ProjectManagementApi.Context
             {
                 entity.HasKey(x => x.Id);
                 entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
+            });
+
+            modelBuilder.Entity<Role>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+            });
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasOne(x => x.Role).WithMany().HasForeignKey(x => x.RoleId);
             });
 
             base.OnModelCreating(modelBuilder);

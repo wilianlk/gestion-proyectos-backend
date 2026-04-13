@@ -1,5 +1,9 @@
+using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using DatabasesLib.Contexts;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ProjectManagementApi.Context;
 using ProjectManagementApi.Models;
@@ -16,6 +20,31 @@ var appSettingsSection = configuration.GetSection("AppSettings");
 builder.Services.Configure<AppSettings>(appSettingsSection);
 var appSettings = appSettingsSection.Get<AppSettings>();
 
+
+Console.WriteLine("AppSettings:");
+Console.WriteLine($"Jwt: Issuer={appSettings?.Jwt.Issuer}, Audience={appSettings?.Jwt.Audience}, SecretKey={appSettings?.Jwt.Key}, Expired={appSettings?.Jwt.Expired}");
+
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = appSettings?.Jwt.Issuer ?? "",
+            ValidAudience = appSettings?.Jwt.Audience ?? "",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings?.Jwt.Key ?? ""))
+        };
+    });
+
+
 // Application Context
 builder.Services.AddDbContext<ApplicationContext>();
 
@@ -27,7 +56,13 @@ builder.Services.AddScoped<IProjectDocumentIntegrationRepository<ProjectDocument
 builder.Services.AddScoped<IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor>, ProjectDocumentRaciActorRepository>();
 builder.Services.AddScoped<IProjectDocumentRiskRepository<ProjectDocumentRisk>, ProjectDocumentRiskRepository>();
 builder.Services.AddScoped<IProjectDocumentTestCaseRepository<ProjectDocumentTestCase>, ProjectDocumentTestCaseRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ITokenUserService, TokenUserService>();
 builder.Services.AddScoped<IFileService, FileService>();
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddHttpLogging(o => { });
 builder.Services.AddScoped<IDatabaseParametersService>(ServiceProvider => new DatabaseParametersService(
@@ -81,6 +116,8 @@ app.UseCors(x =>
 app.UseHttpLogging();
 app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

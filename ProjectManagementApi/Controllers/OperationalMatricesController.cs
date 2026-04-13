@@ -20,6 +20,7 @@ namespace ProjectManagementApi.Controllers
         private readonly IProjectDocumentTestCaseRepository<ProjectDocumentTestCase> _testCaseRepository;
         private readonly ILogger<OperationalMatricesController> _logger;
         private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
+        private readonly ITokenUserService _tokenUserService;
 
         public OperationalMatricesController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
@@ -28,7 +29,8 @@ namespace ProjectManagementApi.Controllers
             IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> raciActorRepository,
             IProjectDocumentRiskRepository<ProjectDocumentRisk> riskRepository,
             IProjectDocumentTestCaseRepository<ProjectDocumentTestCase> testCaseRepository,
-            ILogger<OperationalMatricesController> logger)
+            ILogger<OperationalMatricesController> logger,
+            ITokenUserService tokenUserService)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _requirementRepository = requirementRepository;
@@ -37,6 +39,7 @@ namespace ProjectManagementApi.Controllers
             _riskRepository = riskRepository;
             _testCaseRepository = testCaseRepository;
             _logger = logger;
+            _tokenUserService = tokenUserService;
         }
 
         /// <summary>
@@ -56,6 +59,13 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(new { message = "No requirements provided" });
                 }
 
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
                 if (project == null)
                 {
@@ -67,16 +77,15 @@ namespace ProjectManagementApi.Controllers
                 var entities = dto.Requirements.Select(r => new ProjectDocumentRequirement
                 {
                     ProjectDocumentId = project.Id,
-                    Code = r.Code,
-                    Description = r.Description,
-                    Type = r.Type,
+                    Code = StringSanitizer.SanitizeForInformix(r.Code),
+                    Description = StringSanitizer.SanitizeForInformix(r.Description),
+                    Type = StringSanitizer.SanitizeForInformix(r.Type),
                     Priority = r.Priority,
-                    AcceptanceCriteria = r.AcceptanceCriteria,
+                    AcceptanceCriteria = StringSanitizer.SanitizeForInformix(r.AcceptanceCriteria),
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    // TODO: Add user context to get actual username instead of hardcoding
-                    Identification = "1234567890",
-                    Username = "dev"
+                    Identification = currentUser.Identification,
+                    Username = currentUser.Username
                 }).ToList();
 
                 _requirementRepository.AddRange(entities);
@@ -119,6 +128,13 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(new { message = "No integrations provided" });
                 }
 
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
                 if (project == null)
                 {
@@ -134,9 +150,8 @@ namespace ProjectManagementApi.Controllers
                     Description = i.Description,
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    // TODO: Add user context to get actual username instead of hardcoding
-                    Identification = "1234567890",
-                    Username = "dev"
+                    Identification = currentUser.Identification,
+                    Username = currentUser.Username
                 }).ToList();
 
                 _integrationRepository.AddRange(entities);
@@ -176,6 +191,13 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(new { message = "No RACI matrix rows provided" });
                 }
 
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
                 if (project == null)
                 {
@@ -187,15 +209,14 @@ namespace ProjectManagementApi.Controllers
                 var entities = dto.Rows.Select(a => new ProjectDocumentRaciActor
                 {
                     ProjectDocumentId = project.Id,
-                    Activity = a.Activity,
+                    Activity = StringSanitizer.SanitizeForInformix(a.Activity),
                     Type = a.Type,
                     Area = a.Area,
                     Role = a.Role,
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    // TODO: Add user context to get actual username instead of hardcoding
-                    Identification = "1234567890",
-                    Username = "dev"
+                    Identification = currentUser.Identification,
+                    Username = currentUser.Username
                 }).ToList();
 
                 _raciActorRepository.AddRange(entities);
@@ -237,6 +258,13 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(new { message = "No risks provided" });
                 }
 
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
                 if (project == null)
                 {
@@ -255,8 +283,8 @@ namespace ProjectManagementApi.Controllers
                     Owner = r.Owner,
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    Identification = "1234567890",
-                    Username = "dev"
+                    Identification = currentUser.Identification,
+                    Username = currentUser.Username
                 }).ToList();
 
                 _riskRepository.AddRange(entities);
@@ -299,6 +327,13 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(new { message = "No test cases provided" });
                 }
 
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
                 if (project == null)
                 {
@@ -310,13 +345,13 @@ namespace ProjectManagementApi.Controllers
                 var entities = dto.TestCases.Select(t => new ProjectDocumentTestCase
                 {
                     ProjectDocumentId = project.Id,
-                    TestStrategy = t.TestStrategy,
-                    AcceptanceCriteria = t.AcceptanceCriteria,
-                    DeployProductionCriteria = t.DeployProductionCriteria,
+                    TestStrategy = StringSanitizer.SanitizeForInformix(t.TestStrategy),
+                    AcceptanceCriteria = StringSanitizer.SanitizeForInformix(t.AcceptanceCriteria),
+                    DeployProductionCriteria = StringSanitizer.SanitizeForInformix(t.DeployProductionCriteria),
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    Identification = "1234567890",
-                    Username = "dev"
+                    Identification = currentUser.Identification,
+                    Username = currentUser.Username
                 }).ToList();
 
                 _testCaseRepository.AddRange(entities);

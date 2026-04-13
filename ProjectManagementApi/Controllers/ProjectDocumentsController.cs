@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using ProjectManagementApi.Context;
@@ -11,6 +12,7 @@ namespace ProjectManagementApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProjectDocumentsController : ControllerBase
     {
         private readonly IProjectDocumentRepository<ProjectDocument> _projectDocumentRepository;
@@ -18,6 +20,7 @@ namespace ProjectManagementApi.Controllers
         private readonly IFileService _fileService;
         private readonly ILogger<ProjectDocumentsController> _logger;
         private readonly ApplicationContext _context;
+        private readonly ITokenUserService _tokenUserService;
         private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
 
         public ProjectDocumentsController(
@@ -25,13 +28,15 @@ namespace ProjectManagementApi.Controllers
             IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> attachmentRepository,
             IFileService fileService,
             ILogger<ProjectDocumentsController> logger,
-            ApplicationContext context)
+            ApplicationContext context,
+            ITokenUserService tokenUserService)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _attachmentRepository = attachmentRepository;
             _fileService = fileService;
             _logger = logger;
             _context = context;
+            _tokenUserService = tokenUserService;
         }
 
         /// <summary>
@@ -42,6 +47,7 @@ namespace ProjectManagementApi.Controllers
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ProjectDocument>> Create([FromBody] CreateProjectDocumentDto dto)
         {
             try
@@ -56,7 +62,14 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(new { message = $"Project code '{dto.ProjectCode}' already exists" });
                 }
 
-                var created = await _projectDocumentRepository.CreateAsync(dto);
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                var created = await _projectDocumentRepository.CreateAsync(dto, currentUser);
                 return CreatedAtAction(nameof(GetByProjectCode), new { projectCode = created.ProjectCode }, created);
             }
             catch (Exception ex)
@@ -139,7 +152,14 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
-                await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto);
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto, currentUser);
 
                 if (files != null && files.Count > 0)
                 {
@@ -191,7 +211,14 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
-                await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto);
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto, currentUser);
 
                 var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
@@ -232,8 +259,15 @@ namespace ProjectManagementApi.Controllers
                         return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                     }
 
+                    // Get current user from JWT token
+                    var currentUser = await _tokenUserService.GetCurrentUser(User);
+                    if (currentUser == null)
+                    {
+                        return Unauthorized(new { message = "User information not found in token" });
+                    }
+
                     // Update UX Cases section
-                    await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto);
+                    await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto, currentUser);
 
                     // Process and upload attachments if provided
                     if (files != null && files.Count > 0)
@@ -291,7 +325,14 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
-                await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto);
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto, currentUser);
 
                 var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
@@ -324,7 +365,14 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
-                await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto);
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto, currentUser);
 
                 var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
@@ -357,7 +405,14 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
-                await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto);
+                // Get current user from JWT token
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto, currentUser);
 
                 var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));

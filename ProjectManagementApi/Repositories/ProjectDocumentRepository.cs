@@ -20,9 +20,10 @@ namespace ProjectManagementApi.Repositories
         * Description: Create a new project document (initial general section)
         * Input Parameters: 
         *      * dto (CreateProjectDocumentDto): Project document data
+        *      * user (User): Current authenticated user from JWT token
         * Output Parameters: Created project document
         */
-        public async Task<ProjectDocument> CreateAsync(CreateProjectDocumentDto dto)
+        public async Task<ProjectDocument> CreateAsync(CreateProjectDocumentDto dto, User user)
         {
             var entity = new ProjectDocument
             {
@@ -40,9 +41,8 @@ namespace ProjectManagementApi.Repositories
                 Exclusions = StringSanitizer.SanitizeForInformix(dto.Exclusions),
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true,
-                // TODO: Add user context to get actual username instead of hardcoding
-                Identification = "1234567890",
-                Username = "dev"
+                Identification = user.Identification,
+                Username = user.Username
             };
 
             _context.ProjectDocuments.Add(entity);
@@ -94,7 +94,7 @@ namespace ProjectManagementApi.Repositories
         *      * dto (UpdateProjectGeneralSectionDto): General section data
         * Output Parameters: None
         */
-        public async Task UpdateGeneralSectionAsync(string projectCode, UpdateProjectGeneralSectionDto dto)
+        public async Task UpdateGeneralSectionAsync(string projectCode, UpdateProjectGeneralSectionDto dto, User user)
         {
             var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == StringSanitizer.SanitizeForInformix(projectCode));
             if (entity != null)
@@ -111,9 +111,8 @@ namespace ProjectManagementApi.Repositories
                 entity.Scope = StringSanitizer.SanitizeForInformix(dto.Scope);
                 entity.Exclusions = StringSanitizer.SanitizeForInformix(dto.Exclusions);
                 entity.UpdatedAt = DateTime.UtcNow;
-                // TODO: Update user context to get actual username instead of hardcoding
-                entity.Identification = "1234567890";
-                entity.Username = "dev";
+                entity.Identification = user.Identification;
+                entity.Username = user.Username;
 
                 await _context.SaveChangesAsync();
             }
@@ -126,23 +125,22 @@ namespace ProjectManagementApi.Repositories
         *      * dto (UpdateArchitectureSectionDto): Architecture section data
         * Output Parameters: None
         */
-        public async Task UpdateArchitectureSectionAsync(string projectCode, UpdateArchitectureSectionDto dto)
+        public async Task UpdateArchitectureSectionAsync(string projectCode, UpdateArchitectureSectionDto dto, User user)
         {
             var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
             if (entity != null)
             {
-                entity.SolutionDescription = dto.SolutionDescription;
-                entity.SolutionType = dto.SolutionType;
-                entity.DeploymentModel = dto.DeploymentModel;
-                entity.SoftwareStack = dto.SoftwareStack;
-                entity.HardwareArchitecture = dto.HardwareArchitecture;
-                entity.SecurityControl = dto.SecurityControl;
+                entity.SolutionDescription = StringSanitizer.SanitizeForInformix(dto.SolutionDescription);
+                entity.SolutionType = StringSanitizer.SanitizeForInformix(dto.SolutionType);
+                entity.DeploymentModel = StringSanitizer.SanitizeForInformix(dto.DeploymentModel);
+                entity.SoftwareStack = StringSanitizer.SanitizeForInformix(dto.SoftwareStack);
+                entity.HardwareArchitecture = StringSanitizer.SanitizeForInformix(dto.HardwareArchitecture);
+                entity.SecurityControl = StringSanitizer.SanitizeForInformix(dto.SecurityControl);
                 entity.ExpectedConcurrentUsers = dto.ExpectedConcurrentUsers;
-                entity.SlaResponseTime = dto.SlaResponseTime;
+                entity.SlaResponseTime = StringSanitizer.SanitizeForInformix(dto.SlaResponseTime);
                 entity.UpdatedAt = DateTime.UtcNow;
-                // TODO: Update user context to get actual username instead of hardcoding
-                entity.Identification = "1234567890";
-                entity.Username = "dev";
+                entity.Identification = user.Identification;
+                entity.Username = user.Username;
 
                 await _context.SaveChangesAsync();
             }
@@ -155,19 +153,18 @@ namespace ProjectManagementApi.Repositories
         *      * dto (UpdateUxCasesSectionDto): UX Cases section data
         * Output Parameters: None
         */
-        public async Task UpdateUxCasesSectionAsync(string projectCode, UpdateUxCasesSectionDto dto)
+        public async Task UpdateUxCasesSectionAsync(string projectCode, UpdateUxCasesSectionDto dto, User user)
         {
             var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
             if (entity != null)
             {
-                entity.UseCases = dto.UseCases;
-                entity.RequiredDiagrams = dto.RequiredDiagrams;
-                entity.ExperienceDesignMockups = dto.ExperienceDesignMockups;
-                entity.TargetUsers = dto.TargetUsers;
+                entity.UseCases = StringSanitizer.SanitizeForInformix(dto.UseCases);
+                entity.RequiredDiagrams = StringSanitizer.SanitizeForInformix(dto.RequiredDiagrams);
+                entity.ExperienceDesignMockups = StringSanitizer.SanitizeForInformix(dto.ExperienceDesignMockups);
+                entity.TargetUsers = StringSanitizer.SanitizeForInformix(dto.TargetUsers);
                 entity.UpdatedAt = DateTime.UtcNow;
-                // TODO: Update user context to get actual username instead of hardcoding
-                entity.Identification = "1234567890";
-                entity.Username = "dev";
+                entity.Identification = user.Identification;
+                entity.Username = user.Username;
 
                 await _context.SaveChangesAsync();
             }
@@ -180,20 +177,19 @@ namespace ProjectManagementApi.Repositories
         *      * dto (UpdateConstraintsSectionDto): Constraints section data
         * Output Parameters: None
         */
-        public async Task UpdateConstraintsSectionAsync(string projectCode, UpdateConstraintsSectionDto dto)
+        public async Task UpdateConstraintsSectionAsync(string projectCode, UpdateConstraintsSectionDto dto, User user)
         {
             var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
             if (entity != null)
             {
-                entity.EstimatedBudget = dto.EstimatedBudget;
+                entity.EstimatedBudget = StringSanitizer.SanitizeForInformix(dto.EstimatedBudget);
                 entity.TargetDate = dto.TargetDate;
-                entity.TechnicalConstraints = dto.TechnicalConstraints;
-                entity.BusinessConstraints = dto.BusinessConstraints;
-                entity.RegulationsCompliance = dto.RegulationsCompliance;
+                entity.TechnicalConstraints = StringSanitizer.SanitizeForInformix(dto.TechnicalConstraints);
+                entity.BusinessConstraints = StringSanitizer.SanitizeForInformix(dto.BusinessConstraints);
+                entity.RegulationsCompliance = StringSanitizer.SanitizeForInformix(dto.RegulationsCompliance);
                 entity.UpdatedAt = DateTime.UtcNow;
-                // TODO: Update user context to get actual username instead of hardcoding
-                entity.Identification = "1234567890";
-                entity.Username = "dev";
+                entity.Identification = user.Identification;
+                entity.Username = user.Username;
 
                 await _context.SaveChangesAsync();
             }
@@ -206,18 +202,17 @@ namespace ProjectManagementApi.Repositories
         *      * dto (UpdateAreasIntegrationsSectionDto): Areas and Integrations section data
         * Output Parameters: None
         */
-        public async Task UpdateAreasIntegrationsSectionAsync(string projectCode, UpdateAreasIntegrationsSectionDto dto)
+        public async Task UpdateAreasIntegrationsSectionAsync(string projectCode, UpdateAreasIntegrationsSectionDto dto, User user)
         {
             var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
             if (entity != null)
             {
-                entity.InvolvedAreas = dto.InvolvedAreas;
-                entity.OrganizationalImpact = dto.OrganizationalImpact;
-                entity.MasterDataMigration = dto.MasterDataMigration;
+                entity.InvolvedAreas = StringSanitizer.SanitizeForInformix(dto.InvolvedAreas);
+                entity.OrganizationalImpact = StringSanitizer.SanitizeForInformix(dto.OrganizationalImpact);
+                entity.MasterDataMigration = StringSanitizer.SanitizeForInformix(dto.MasterDataMigration);
                 entity.UpdatedAt = DateTime.UtcNow;
-                // TODO: Update user context to get actual username instead of hardcoding
-                entity.Identification = "1234567890";
-                entity.Username = "dev";
+                entity.Identification = user.Identification;
+                entity.Username = user.Username;
 
                 await _context.SaveChangesAsync();
             }
@@ -230,18 +225,17 @@ namespace ProjectManagementApi.Repositories
         *      * dto (UpdateRaciSectionDto): RACI section data
         * Output Parameters: None
         */
-        public async Task UpdateRaciSectionAsync(string projectCode, UpdateRaciSectionDto dto)
+        public async Task UpdateRaciSectionAsync(string projectCode, UpdateRaciSectionDto dto, User user)
         {
             var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
             if (entity != null)
             {
-                entity.ResponsibilitiesSummary = dto.ResponsibilitiesSummary;
-                entity.ChangeManagementAdoption = dto.ChangeManagementAdoption;
-                entity.OperationSupport = dto.OperationSupport;
+                entity.ResponsibilitiesSummary = StringSanitizer.SanitizeForInformix(dto.ResponsibilitiesSummary);
+                entity.ChangeManagementAdoption = StringSanitizer.SanitizeForInformix(dto.ChangeManagementAdoption);
+                entity.OperationSupport = StringSanitizer.SanitizeForInformix(dto.OperationSupport);
                 entity.UpdatedAt = DateTime.UtcNow;
-                // TODO: Update user context to get actual username instead of hardcoding
-                entity.Identification = "1234567890";
-                entity.Username = "dev";
+                entity.Identification = user.Identification;
+                entity.Username = user.Username;
 
                 await _context.SaveChangesAsync();
             }
