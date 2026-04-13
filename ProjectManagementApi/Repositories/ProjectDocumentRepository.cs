@@ -69,11 +69,17 @@ namespace ProjectManagementApi.Repositories
         *      * projectCode (string): Project code to search
         * Output Parameters: Project document with attachments if found, null otherwise
         */
-        public async Task<ProjectDocument?> GetByProjectCodeWithAttachmentsAsync(string projectCode)
+        public async Task<ProjectDocument?> GetByProjectCodeDetailedAsync(string projectCode)
         {
-            return await _context.ProjectDocuments
+            var result = await _context.ProjectDocuments
                 .Include(x => x.Attachments)
+                .Include(x => x.Requirements)
+                .Include(x => x.Integrations)
+                .Include(x => x.RaciActors)
+                .Include(x => x.Risks)
+                .Include(x => x.TestCases)
                 .FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
+            return result;
         }
 
         /**

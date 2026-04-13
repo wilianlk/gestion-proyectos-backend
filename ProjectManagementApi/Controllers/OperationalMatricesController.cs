@@ -146,8 +146,8 @@ namespace ProjectManagementApi.Controllers
                 var entities = dto.Integrations.Select(i => new ProjectDocumentIntegration
                 {
                     ProjectDocumentId = project.Id,
-                    System = i.System,
-                    Description = i.Description,
+                    System = StringSanitizer.SanitizeForInformix(i.System),
+                    Description = StringSanitizer.SanitizeForInformix(i.Description),
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
                     Identification = currentUser.Identification,
@@ -276,11 +276,11 @@ namespace ProjectManagementApi.Controllers
                 var entities = dto.Risks.Select(r => new ProjectDocumentRisk
                 {
                     ProjectDocumentId = project.Id,
-                    Risk = r.Risk,
+                    Risk = StringSanitizer.SanitizeForInformix(r.Risk),
                     Impact = r.Impact,
                     Probability = r.Probability,
-                    Mitigation = r.Mitigation,
-                    Owner = r.Owner,
+                    Mitigation = StringSanitizer.SanitizeForInformix(r.Mitigation),
+                    Owner = StringSanitizer.SanitizeForInformix(r.Owner),
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
                     Identification = currentUser.Identification,

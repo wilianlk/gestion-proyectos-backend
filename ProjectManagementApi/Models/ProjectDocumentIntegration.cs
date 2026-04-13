@@ -10,6 +10,9 @@ namespace ProjectManagementApi.Models
         [Column("ProjectDocumentId")]
         public int ProjectDocumentId { get; set; }
 
+        [ForeignKey("ProjectDocumentId")]
+        public ProjectDocument ProjectDocument { get; set; }
+
         [Column("System")]
         public string? System { get; set; }
 
@@ -22,6 +25,5 @@ namespace ProjectManagementApi.Models
         [Column("Username")]
         public string Username { get; set; }
 
-        public ProjectDocument? ProjectDocument { get; set; }
     }
 }

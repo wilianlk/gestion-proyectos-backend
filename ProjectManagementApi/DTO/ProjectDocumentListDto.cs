@@ -49,5 +49,22 @@ namespace ProjectManagementApi.DTO
         public string? ConstraintsSectionStatus { get; set; }
         public string? AreasIntegrationsSectionStatus { get; set; }
         public string? RaciSectionStatus { get; set; }
+
+        // Fields Requirements section
+        public List<RequirementDto>? Requirements { get; set; }
+        
+        // Fields Integrations section
+        public List<IntegrationDto>? Integrations { get; set; }
+
+        // Fields RACI section
+        public List<RaciActorDto>? Raci { get; set; }
+
+        // Fields Risks section
+        public List<RiskDto>? Risks { get; set; }
+
+        // Fields TestCase section
+        public List<TestCaseDto>? TestCaseDtos { get; set; }
+
+
     }
 }

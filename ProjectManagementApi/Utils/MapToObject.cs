@@ -67,6 +67,50 @@ namespace ProjectManagementApi.Utils
                     CreatedAt = a.CreatedAt,
                     UpdatedAt = a.UpdatedAt
                 }).ToList() ?? new List<ProjectDocumentAttachmentDto>(),
+                Requirements = project.Requirements?.Select(a => new RequirementDto
+                {
+                    Id = a.Id,
+                    ProjectDocumentId = a.ProjectDocumentId,
+                    Code = a.Code,
+                    Description = a.Description,
+                    Type = a.Type,
+                    Priority = a.Priority,
+                    AcceptanceCriteria = a.AcceptanceCriteria
+                }).ToList() ?? new List<RequirementDto>(),
+                Integrations = project.Integrations?.Select(a => new IntegrationDto
+                {
+                    Id = a.Id,
+                    ProjectDocumentId = a.ProjectDocumentId,
+                    System = a.System,
+                    Description = a.Description
+                }).ToList() ?? new List<IntegrationDto>(),
+                RaciActors = project.RaciActors?.Select(a => new RaciActorDto
+                {
+                    Id = a.Id,
+                    ProjectDocumentId = a.ProjectDocumentId,
+                    Activity = a.Activity,
+                    Type = a.Type,
+                    Area = a.Area,
+                    Role = a.Role
+                }).ToList() ?? new List<RaciActorDto>(),
+                Risks = project.Risks?.Select(a => new RiskDto
+                {
+                    Id = a.Id,
+                    ProjectDocumentId = a.ProjectDocumentId,
+                    Risk = a.Risk,
+                    Impact = a.Impact,
+                    Probability = a.Probability,
+                    Mitigation = a.Mitigation,
+                    Owner = a.Owner
+                }).ToList() ?? new List<RiskDto>(),
+                TestCases = project.TestCases?.Select(a => new TestCaseDto
+                {
+                    Id = a.Id,
+                    ProjectDocumentId = a.ProjectDocumentId,
+                    TestStrategy = a.TestStrategy,
+                    AcceptanceCriteria = a.AcceptanceCriteria,
+                    DeployProductionCriteria = a.DeployProductionCriteria
+                }).ToList() ?? new List<TestCaseDto>(),
 
                 // Section Status
                 GeneralSectionStatus = CalculateStatus.CalculateGeneralSectionStatus(project),
@@ -74,7 +118,9 @@ namespace ProjectManagementApi.Utils
                 UxCasesSectionStatus = CalculateStatus.CalculateUxCasesSectionStatus(project),
                 ConstraintsSectionStatus = CalculateStatus.CalculateConstraintsSectionStatus(project),
                 AreasIntegrationsSectionStatus = CalculateStatus.CalculateAreasIntegrationsSectionStatus(project),
-                RaciSectionStatus = CalculateStatus.CalculateRaciSectionStatus(project)
+                RaciSectionStatus = CalculateStatus.CalculateRaciSectionStatus(project),
+                RiskSectionStatus = CalculateStatus.CalculateRiskSectionStatus(project),
+                TestCaseSectionStatus = CalculateStatus.CalculateTestCaseSectionStatus(project)
             };
         }
         

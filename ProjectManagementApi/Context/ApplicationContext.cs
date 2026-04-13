@@ -34,6 +34,9 @@ namespace ProjectManagementApi.Context
                 entity.HasKey(x => x.Id);
                 entity.HasIndex(x => x.ProjectCode).IsUnique();
                 entity.HasMany(x => x.Attachments).WithOne(a => a.ProjectDocument).HasForeignKey(x => x.ProjectDocumentId);
+                entity.HasMany(x => x.Requirements).WithOne(a => a.ProjectDocument).HasForeignKey(x => x.ProjectDocumentId);
+                entity.HasMany(x => x.Integrations).WithOne(a => a.ProjectDocument).HasForeignKey(x => x.ProjectDocumentId);
+                entity.HasMany(x => x.RaciActors).WithOne(a => a.ProjectDocument).HasForeignKey(x => x.ProjectDocumentId);
             });
 
             modelBuilder.Entity<ProjectDocumentAttachment>(entity =>
@@ -44,31 +47,26 @@ namespace ProjectManagementApi.Context
             modelBuilder.Entity<ProjectDocumentRequirement>(entity =>
             {
                 entity.HasKey(x => x.Id);
-                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
             });
 
             modelBuilder.Entity<ProjectDocumentIntegration>(entity =>
             {
                 entity.HasKey(x => x.Id);
-                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
             });
 
             modelBuilder.Entity<ProjectDocumentRaciActor>(entity =>
             {
                 entity.HasKey(x => x.Id);
-                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
             });
 
             modelBuilder.Entity<ProjectDocumentRisk>(entity =>
             {
                 entity.HasKey(x => x.Id);
-                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
             });
 
             modelBuilder.Entity<ProjectDocumentTestCase>(entity =>
             {
                 entity.HasKey(x => x.Id);
-                entity.HasOne(x => x.ProjectDocument).WithMany().HasForeignKey(x => x.ProjectDocumentId);
             });
 
             modelBuilder.Entity<Role>(entity =>

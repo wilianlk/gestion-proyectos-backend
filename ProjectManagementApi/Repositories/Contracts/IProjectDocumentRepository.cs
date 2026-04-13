@@ -8,7 +8,7 @@ namespace ProjectManagementApi.Repositories
     {
         public Task<ProjectDocument> CreateAsync(CreateProjectDocumentDto dto, User user);
         public Task<ProjectDocument?> GetByProjectCodeAsync(string projectCode);
-        public Task<ProjectDocument?> GetByProjectCodeWithAttachmentsAsync(string projectCode);
+        public Task<ProjectDocument?> GetByProjectCodeDetailedAsync(string projectCode);
         public Task<bool> ExistsByProjectCodeAsync(string projectCode);
         public Task UpdateGeneralSectionAsync(string projectCode, UpdateProjectGeneralSectionDto dto, User user);
         public Task UpdateArchitectureSectionAsync(string projectCode, UpdateArchitectureSectionDto dto, User user);

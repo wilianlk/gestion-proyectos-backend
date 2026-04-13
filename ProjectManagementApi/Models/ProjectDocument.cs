@@ -125,5 +125,10 @@ namespace ProjectManagementApi.Models
         public string Username { get; set; }
 
         public ICollection<ProjectDocumentAttachment> Attachments { get; set; } = new List<ProjectDocumentAttachment>();
+        public ICollection<ProjectDocumentRequirement> Requirements { get; set; } = new List<ProjectDocumentRequirement>();
+        public ICollection<ProjectDocumentIntegration> Integrations { get; set; } = new List<ProjectDocumentIntegration>();
+        public ICollection<ProjectDocumentRaciActor> RaciActors { get; set; } = new List<ProjectDocumentRaciActor>();
+        public ICollection<ProjectDocumentRisk> Risks { get; set; } = new List<ProjectDocumentRisk>();
+        public ICollection<ProjectDocumentTestCase> TestCases { get; set; } = new List<ProjectDocumentTestCase>();
     }
 }

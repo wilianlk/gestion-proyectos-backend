@@ -91,7 +91,7 @@ namespace ProjectManagementApi.Controllers
         {
             try
             {
-                var project = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                var project = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(StringSanitizer.SanitizeForInformix(projectCode));
                 if (project == null)
                 {
                     return NotFound(new { message = $"Project with code '{projectCode}' not found" });
@@ -179,7 +179,7 @@ namespace ProjectManagementApi.Controllers
                     }
                 }
 
-                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
             catch (Exception ex)
@@ -220,7 +220,7 @@ namespace ProjectManagementApi.Controllers
 
                 await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto, currentUser);
 
-                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
             catch (Exception ex)
@@ -291,7 +291,7 @@ namespace ProjectManagementApi.Controllers
                     // Commit transaction if all operations succeed
                     await transaction.CommitAsync();
 
-                    var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                    var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                     return Ok(MapToObject.MapToDto(updatedProject, _fileService));
                 }
                 catch (Exception ex)
@@ -334,7 +334,7 @@ namespace ProjectManagementApi.Controllers
 
                 await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto, currentUser);
 
-                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
             catch (Exception ex)
@@ -374,7 +374,7 @@ namespace ProjectManagementApi.Controllers
 
                 await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto, currentUser);
 
-                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
             catch (Exception ex)
@@ -414,7 +414,7 @@ namespace ProjectManagementApi.Controllers
 
                 await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto, currentUser);
 
-                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
             }
             catch (Exception ex)

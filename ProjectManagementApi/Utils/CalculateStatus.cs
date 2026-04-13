@@ -4,6 +4,12 @@ namespace ProjectManagementApi.Utils
 {
     public static class CalculateStatus
     {
+        /// <summary>
+        /// Description: Calculate the completion status of the General section
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing general section fields
+        /// Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incomplete" otherwise
+        /// </summary>
         public static string CalculateGeneralSectionStatus(ProjectDocument project)
         {
             int totalFields = 11;
@@ -26,6 +32,12 @@ namespace ProjectManagementApi.Utils
             return "Incompleto";
         }
 
+        /// <summary>
+        /// Description: Calculate the completion status of the Architecture section
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing architecture section fields
+        /// Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+        /// </summary>
         public static string CalculateArchitectureSectionStatus(ProjectDocument project)
         {
             int totalFields = 9;
@@ -48,6 +60,12 @@ namespace ProjectManagementApi.Utils
             return "Incompleto";
         }
 
+        /// <summary>
+        /// Description: Calculate the completion status of the UX Cases section
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing UX cases section fields
+        /// Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+        /// </summary>
         public static string CalculateUxCasesSectionStatus(ProjectDocument project)
         {
             int totalFields = 5;
@@ -66,6 +84,12 @@ namespace ProjectManagementApi.Utils
             return "Incompleto";
         }
 
+        /// <summary>
+        /// Description: Calculate the completion status of the Constraints section
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing constraints section fields
+        /// Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+        /// </summary>
         public static string CalculateConstraintsSectionStatus(ProjectDocument project)
         {
             int totalFields = 5;
@@ -82,6 +106,12 @@ namespace ProjectManagementApi.Utils
             return "Incompleto";
         }
 
+        /// <summary>
+        /// Description: Calculate the completion status of the Areas Integrations section
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing areas integrations section fields
+        /// Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+        /// </summary>
         public static string CalculateAreasIntegrationsSectionStatus(ProjectDocument project)
         {
             int totalFields = 3;
@@ -96,6 +126,12 @@ namespace ProjectManagementApi.Utils
             return "Incompleto";
         }
 
+        /// <summary>
+        /// Description: Calculate the completion status of the RACI section
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing RACI section fields
+        /// Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+        /// </summary>
         public static string CalculateRaciSectionStatus(ProjectDocument project)
         {
             int totalFields = 3;
@@ -108,6 +144,41 @@ namespace ProjectManagementApi.Utils
             if (filledFields == 0) return "Pendiente";
             if (filledFields == totalFields) return "Completo";
             return "Incompleto";
+        }
+
+        /// <summary>
+        /// Description: Calculate the completion status of the Risk section based on integrations
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing integrations collection
+        /// Output Parameters: Status string - "Pendiente" if no complete integrations found, "Completo" if at least one integration has all fields filled
+        /// </summary>
+        public static string CalculateRiskSectionStatus(ProjectDocument project)
+        {
+            var hasCompleteIntegration = project.Integrations?.Any(i =>
+                !string.IsNullOrEmpty(i.System) &&
+                !string.IsNullOrEmpty(i.Description)
+            ) ?? false;
+
+            if (!hasCompleteIntegration) return "Pendiente";
+            return "Completo";
+        }
+
+        /// <summary>
+        /// Description: Calculate the completion status of the Test Case section based on test cases
+        /// Input Parameters: 
+        ///     * project (ProjectDocument): Project document object containing test cases collection
+        /// Output Parameters: Status string - "Pendiente" if no complete test cases found, "Completo" if at least one test case has all fields filled
+        /// </summary>
+        public static string CalculateTestCaseSectionStatus(ProjectDocument project)
+        {
+            var hasCompleteTestCases = project.TestCases?.Any(i =>
+                !string.IsNullOrEmpty(i.TestStrategy) &&
+                !string.IsNullOrEmpty(i.AcceptanceCriteria) &&
+                !string.IsNullOrEmpty(i.DeployProductionCriteria)
+            ) ?? false;
+
+            if (!hasCompleteTestCases) return "Pendiente";
+            return "Completo";
         }
 
     }
