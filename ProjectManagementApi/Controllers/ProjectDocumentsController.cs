@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using ProjectManagementApi.Context;
 using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
@@ -16,18 +17,21 @@ namespace ProjectManagementApi.Controllers
         private readonly IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> _attachmentRepository;
         private readonly IFileService _fileService;
         private readonly ILogger<ProjectDocumentsController> _logger;
+        private readonly ApplicationContext _context;
         private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
 
         public ProjectDocumentsController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
             IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> attachmentRepository,
             IFileService fileService,
-            ILogger<ProjectDocumentsController> logger)
+            ILogger<ProjectDocumentsController> logger,
+            ApplicationContext context)
         {
             _projectDocumentRepository = projectDocumentRepository;
             _attachmentRepository = attachmentRepository;
             _fileService = fileService;
             _logger = logger;
+            _context = context;
         }
 
         /// <summary>
@@ -170,16 +174,14 @@ namespace ProjectManagementApi.Controllers
         /// </summary>
         /// <param name="projectCode">Project code to update</param>
         /// <param name="dto">General section data</param>
-        /// <param name="files">Optional attachments to upload</param>
-        /// <returns>Updated project with attachments</returns>
+        /// <returns>Updated project</returns>
         [HttpPut("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateGeneralSection(
             string projectCode, 
-            [FromForm] UpdateProjectGeneralSectionDto dto,
-            [FromForm] IFormFileCollection? files)
+            [FromForm] UpdateProjectGeneralSectionDto dto)
         {
             try
             {
@@ -190,24 +192,6 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto);
-
-                if (files != null && files.Count > 0)
-                {
-                    foreach (var file in files)
-                    {
-                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "General");
-                        
-                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
-                        {
-                            ProjectDocumentId = project.Id,
-                            Section = "General",
-                            FileName = file.FileName,
-                            FilePath = filePath,
-                            FileSize = file.Length,
-                            ContentType = file.ContentType
-                        });
-                    }
-                }
 
                 var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
                 return Ok(MapToObject.MapToDto(updatedProject, _fileService));
@@ -221,6 +205,7 @@ namespace ProjectManagementApi.Controllers
 
         /// <summary>
         /// Method to update UX Cases section fields and upload attachments in a single request
+        /// Uses database transaction to ensure data integrity - all changes are committed together or rolled back on error
         /// </summary>
         /// <param name="projectCode">Project code to update</param>
         /// <param name="dto">UX Cases section data</param>
@@ -235,41 +220,53 @@ namespace ProjectManagementApi.Controllers
             [FromForm] UpdateUxCasesSectionDto dto,
             [FromForm] IFormFileCollection? files)
         {
-            try
+            // Initialize transaction context
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                if (project == null)
+                try
                 {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-                }
-
-                await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto);
-
-                if (files != null && files.Count > 0)
-                {
-                    foreach (var file in files)
+                    var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+                    if (project == null)
                     {
-                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
-                        
-                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
-                        {
-                            ProjectDocumentId = project.Id,
-                            Section = "UxCases",
-                            FileName = file.FileName,
-                            FilePath = filePath,
-                            FileSize = file.Length,
-                            ContentType = file.ContentType
-                        });
+                        await transaction.RollbackAsync();
+                        return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                     }
-                }
 
-                var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
-                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error actualizando la sección UX para el documento de proyecto {ProjectCode}", projectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                    // Update UX Cases section
+                    await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto);
+
+                    // Process and upload attachments if provided
+                    if (files != null && files.Count > 0)
+                    {
+                        foreach (var file in files)
+                        {
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
+                            
+                            await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
+                            {
+                                ProjectDocumentId = project.Id,
+                                Section = "UxCases",
+                                FileName = file.FileName,
+                                FilePath = filePath,
+                                FileSize = file.Length,
+                                ContentType = file.ContentType
+                            });
+                        }
+                    }
+
+                    // Commit transaction if all operations succeed
+                    await transaction.CommitAsync();
+
+                    var updatedProject = await _projectDocumentRepository.GetByProjectCodeWithAttachmentsAsync(projectCode);
+                    return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+                }
+                catch (Exception ex)
+                {
+                    // Rollback transaction on any error
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error actualizando la sección UX para el documento de proyecto {ProjectCode}. Transacción revertida.", projectCode);
+                    return BadRequest(new { message = DefaultErrorMessage });
+                }
             }
         }
 
