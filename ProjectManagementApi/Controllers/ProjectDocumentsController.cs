@@ -57,16 +57,16 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(ModelState);
                 }
 
-                if (await _projectDocumentRepository.ExistsByProjectCodeAsync(dto.ProjectCode))
-                {
-                    return BadRequest(new { message = $"Project code '{dto.ProjectCode}' already exists" });
-                }
-
                 // Get current user from JWT token
                 var currentUser = await _tokenUserService.GetCurrentUser(User);
                 if (currentUser == null)
                 {
                     return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                if (await _projectDocumentRepository.ExistsByProjectCodeAsync(dto.ProjectCode))
+                {
+                    return BadRequest(new { message = $"Project code '{dto.ProjectCode}' already exists" });
                 }
 
                 var created = await _projectDocumentRepository.CreateAsync(dto, currentUser);
@@ -87,6 +87,9 @@ namespace ProjectManagementApi.Controllers
         [HttpGet("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+
         public async Task<ActionResult<ProjectDocumentDto>> GetByProjectCode(string projectCode)
         {
             try
@@ -113,6 +116,8 @@ namespace ProjectManagementApi.Controllers
         /// <returns>List of project documents with section status</returns>
         [HttpGet("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<ProjectDocumentListDto>>> GetAll()
         {
             try
@@ -138,31 +143,41 @@ namespace ProjectManagementApi.Controllers
         [HttpPut("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateArchitectureSection(
             string projectCode, 
             [FromForm] UpdateArchitectureSectionDto dto,
-            [FromForm] IFormFileCollection? files)
+            [FromForm] IFormFileCollection files)
         {
-            try
+            if (files == null || files.Count == 0)
             {
-                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                if (project == null)
-                {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-                }
+                return BadRequest(new { message = "Se requiere al menos un archivo." });
+            }
 
-                // Get current user from JWT token
-                var currentUser = await _tokenUserService.GetCurrentUser(User);
-                if (currentUser == null)
+            // Initialize transaction context
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
                 {
-                    return Unauthorized(new { message = "User information not found in token" });
-                }
+                    // Get current user from JWT token
+                    var currentUser = await _tokenUserService.GetCurrentUser(User);
+                    if (currentUser == null)
+                    {
+                        return Unauthorized(new { message = "User information not found in token" });
+                    }
 
-                await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto, currentUser);
+                    var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                    if (project == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                    }
 
-                if (files != null && files.Count > 0)
-                {
+                    await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto, currentUser);
+
+                    // Process and upload attachments
                     foreach (var file in files)
                     {
                         var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture");
@@ -177,15 +192,26 @@ namespace ProjectManagementApi.Controllers
                             ContentType = file.ContentType
                         });
                     }
-                }
 
-                var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
-                return Ok(MapToObject.MapToDto(updatedProject, _fileService));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error actualizando la sección de arquitectura para el documento de proyecto {ProjectCode}", projectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                    // Commit transaction if all operations succeed
+                    await transaction.CommitAsync();
+
+                    var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
+                    return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+                }
+                catch (InvalidOperationException ex) // Captura de excepción de FileService
+                {
+                    // Rollback transaction on any error
+                    await transaction.RollbackAsync();
+                    return BadRequest(new { message = ex.Message }); // Retorna el mensaje de validación personalizado
+                }
+                catch (Exception ex)
+                {
+                    // Rollback transaction on any error
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error actualizando la sección de arquitectura para el documento de proyecto {ProjectCode}", projectCode);
+                    return BadRequest(new { message = DefaultErrorMessage });
+                }
             }
         }
 
@@ -198,6 +224,8 @@ namespace ProjectManagementApi.Controllers
         [HttpPut("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateGeneralSection(
             string projectCode, 
@@ -205,17 +233,17 @@ namespace ProjectManagementApi.Controllers
         {
             try
             {
-                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                if (project == null)
-                {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-                }
-
                 // Get current user from JWT token
                 var currentUser = await _tokenUserService.GetCurrentUser(User);
                 if (currentUser == null)
                 {
                     return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
                 await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto, currentUser);
@@ -241,24 +269,23 @@ namespace ProjectManagementApi.Controllers
         [HttpPut("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateUxCasesSection(
             string projectCode, 
             [FromForm] UpdateUxCasesSectionDto dto,
-            [FromForm] IFormFileCollection? files)
+            [FromForm] IFormFileCollection files)
         {
+            if (files == null || files.Count == 0)
+            {
+                return BadRequest(new { message = "Se requiere al menos un archivo." });
+            }
+
             // Initialize transaction context
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                    if (project == null)
-                    {
-                        await transaction.RollbackAsync();
-                        return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-                    }
-
                     // Get current user from JWT token
                     var currentUser = await _tokenUserService.GetCurrentUser(User);
                     if (currentUser == null)
@@ -266,26 +293,30 @@ namespace ProjectManagementApi.Controllers
                         return Unauthorized(new { message = "User information not found in token" });
                     }
 
+                    var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                    if (project == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                    }
+
                     // Update UX Cases section
                     await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto, currentUser);
 
-                    // Process and upload attachments if provided
-                    if (files != null && files.Count > 0)
+                    // Process and upload attachments
+                    foreach (var file in files)
                     {
-                        foreach (var file in files)
+                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
+                        
+                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
                         {
-                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
-                            
-                            await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
-                            {
-                                ProjectDocumentId = project.Id,
-                                Section = "UxCases",
-                                FileName = file.FileName,
-                                FilePath = filePath,
-                                FileSize = file.Length,
-                                ContentType = file.ContentType
-                            });
-                        }
+                            ProjectDocumentId = project.Id,
+                            Section = "UxCases",
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            FileSize = file.Length,
+                            ContentType = file.ContentType
+                        });
                     }
 
                     // Commit transaction if all operations succeed
@@ -293,6 +324,12 @@ namespace ProjectManagementApi.Controllers
 
                     var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                     return Ok(MapToObject.MapToDto(updatedProject, _fileService));
+                }
+                catch (InvalidOperationException ex) // Captura de excepción de FileService
+                {
+                    // Rollback transaction on any error
+                    await transaction.RollbackAsync();
+                    return BadRequest(new { message = ex.Message }); // Retorna el mensaje de validación personalizado
                 }
                 catch (Exception ex)
                 {
@@ -313,23 +350,25 @@ namespace ProjectManagementApi.Controllers
         [HttpPut("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateConstraintsSection(
             string projectCode, 
             [FromBody] UpdateConstraintsSectionDto dto)
         {
             try
             {
-                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                if (project == null)
-                {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-                }
-
                 // Get current user from JWT token
                 var currentUser = await _tokenUserService.GetCurrentUser(User);
                 if (currentUser == null)
                 {
                     return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
                 await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto, currentUser);
@@ -353,23 +392,25 @@ namespace ProjectManagementApi.Controllers
         [HttpPut("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateAreasIntegrationsSection(
             string projectCode, 
             [FromBody] UpdateAreasIntegrationsSectionDto dto)
         {
             try
             {
-                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                if (project == null)
-                {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-                }
-
                 // Get current user from JWT token
                 var currentUser = await _tokenUserService.GetCurrentUser(User);
                 if (currentUser == null)
                 {
                     return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
                 await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto, currentUser);
@@ -393,23 +434,25 @@ namespace ProjectManagementApi.Controllers
         [HttpPut("{projectCode}/[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateRaciSection(
             string projectCode, 
             [FromBody] UpdateRaciSectionDto dto)
         {
             try
             {
-                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                if (project == null)
-                {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-                }
-
                 // Get current user from JWT token
                 var currentUser = await _tokenUserService.GetCurrentUser(User);
                 if (currentUser == null)
                 {
                     return Unauthorized(new { message = "User information not found in token" });
+                }
+
+                var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
+                if (project == null)
+                {
+                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
                 }
 
                 await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto, currentUser);

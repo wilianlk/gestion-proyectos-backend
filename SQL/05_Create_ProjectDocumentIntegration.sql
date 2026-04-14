@@ -4,10 +4,10 @@
 CREATE TABLE ProjectDocumentIntegrations (
     Id SERIAL PRIMARY KEY,
     ProjectDocumentId INTEGER NOT NULL,
-    System VARCHAR(255),
+    System LVARCHAR(255),
     Description TEXT,
-    Identification VARCHAR(255) NOT NULL,
-    Username VARCHAR(255) NOT NULL,
+    Identification LVARCHAR(255) NOT NULL,
+    Username LVARCHAR(255) NOT NULL,
     CreatedAt DATETIME YEAR TO SECOND NOT NULL,
     UpdatedAt DATETIME YEAR TO SECOND,
     IsActive BOOLEAN NOT NULL,

@@ -123,6 +123,9 @@ namespace ProjectManagementApi.Models
 
         [Column("Username")]
         public string Username { get; set; }
+        
+        [Column("CreatedBy")]
+        public string CreatedBy { get; set; }
 
         public ICollection<ProjectDocumentAttachment> Attachments { get; set; } = new List<ProjectDocumentAttachment>();
         public ICollection<ProjectDocumentRequirement> Requirements { get; set; } = new List<ProjectDocumentRequirement>();

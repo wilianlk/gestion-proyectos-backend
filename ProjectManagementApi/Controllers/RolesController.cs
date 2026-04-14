@@ -30,6 +30,8 @@ namespace ProjectManagementApi.Controllers
         /// <returns>List of all roles</returns>
         [HttpGet("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<Role>>> GetAll()
         {
             try
@@ -52,6 +54,8 @@ namespace ProjectManagementApi.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<Role>> GetById(int id)
         {
             try

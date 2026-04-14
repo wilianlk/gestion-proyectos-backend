@@ -37,6 +37,7 @@ namespace ProjectManagementApi.Controllers
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<TokenResponseDto>> Login([FromBody] LoginDto dto)
         {
             try

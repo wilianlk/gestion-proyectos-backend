@@ -4,15 +4,19 @@ using ProjectManagementApi.Services.Contracts;
 
 namespace ProjectManagementApi.Services
 {
-
+    /// <summary>
+    /// Service for file operations (upload, delete, URL generation)
+    /// </summary>
     public class FileService : IFileService
     {
         private readonly IWebHostEnvironment _environment;
+        private readonly IFileValidationService _validationService;
         private readonly string _uploadPath;
 
-        public FileService(IWebHostEnvironment environment)
+        public FileService(IWebHostEnvironment environment, IFileValidationService validationService)
         {
             _environment = environment;
+            _validationService = validationService;
             _uploadPath = Path.Combine(_environment.WebRootPath, "uploads", "project-documents");
             
             if (!Directory.Exists(_uploadPath))
@@ -22,7 +26,7 @@ namespace ProjectManagementApi.Services
         }
 
         /**
-        * Description: Upload a file to the server
+        * Description: Upload a file to the server after validation
         * Input Parameters: 
         *      * file (IFormFile): File to upload
         *      * projectId (int): Project id for folder organization
@@ -31,6 +35,12 @@ namespace ProjectManagementApi.Services
         */
         public async Task<string> UploadFileAsync(IFormFile file, int projectId, string section)
         {
+            var (isValid, errorMessage) = _validationService.ValidateFile(file);
+            if (!isValid)
+            {
+                throw new InvalidOperationException(errorMessage);
+            }
+
             var sectionFolder = SanitizeFolderName(section);
             var projectFolder = Path.Combine(_uploadPath, projectId.ToString());
             var sectionPath = Path.Combine(projectFolder, sectionFolder);

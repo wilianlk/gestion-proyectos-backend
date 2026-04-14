@@ -42,7 +42,8 @@ namespace ProjectManagementApi.Repositories
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true,
                 Identification = user.Identification,
-                Username = user.Username
+                Username = user.Username,
+                CreatedBy = user.Username
             };
 
             _context.ProjectDocuments.Add(entity);

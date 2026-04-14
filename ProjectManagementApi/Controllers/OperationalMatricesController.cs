@@ -50,6 +50,8 @@ namespace ProjectManagementApi.Controllers
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<RequirementDto>>> UpsertRequirements([FromBody] CreateRequirementDto dto)
         {
             try
@@ -119,6 +121,8 @@ namespace ProjectManagementApi.Controllers
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<IntegrationDto>>> UpsertIntegrations([FromBody] CreateIntegrationDto dto)
         {
             try
@@ -182,6 +186,8 @@ namespace ProjectManagementApi.Controllers
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<RaciActorDto>>> UpsertRaciActor([FromBody] CreateRaciActorDto dto)
         {
             try
@@ -249,6 +255,8 @@ namespace ProjectManagementApi.Controllers
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<RiskDto>>> UpsertRisks([FromBody] CreateRiskDto dto)
         {
             try
@@ -318,6 +326,8 @@ namespace ProjectManagementApi.Controllers
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<TestCaseDto>>> UpsertTestCases([FromBody] CreateTestCaseDto dto)
         {
             try

@@ -2,9 +2,9 @@ namespace ProjectManagementApi.DTO
 {
     public class UpdateRaciSectionDto
     {
-        public string? ResponsibilitiesSummary { get; set; }
-        public string? ChangeManagementAdoption { get; set; }
-        public string? OperationSupport { get; set; }
+        public string ResponsibilitiesSummary { get; set; } = null!;
+        public string ChangeManagementAdoption { get; set; } = null!;
+        public string OperationSupport { get; set; } = null!;
     }
 
 }

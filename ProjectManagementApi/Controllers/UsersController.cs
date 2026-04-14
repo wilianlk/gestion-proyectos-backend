@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services;
@@ -34,12 +35,27 @@ namespace ProjectManagementApi.Controllers
         /// <returns>List of all users</returns>
         [HttpGet("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<List<User>>> GetAll()
         {
             try
             {
-                var users = await _userRepository.GetAllAsync();
-                return Ok(users);
+                var users = await _userRepository.GetAllWithRoleAsync();
+                
+                var usersDto = users.Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    LastName = u.LastName,
+                    Username = u.Username,
+                    Email = u.Email,
+                    Identification = u.Identification,
+                    RoleName = u.Role?.Name ?? "",
+                    RoleId = u.RoleId
+                }).ToList();
+
+                return Ok(usersDto);
             }
             catch (Exception ex)
             {
@@ -56,17 +72,31 @@ namespace ProjectManagementApi.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<User>> GetById(int id)
         {
             try
             {
-                var user = await _userRepository.GetByIdAsync(id);
+                var user = await _userRepository.GetByIdWithRoleAsync(id);
                 if (user == null)
                 {
                     return NotFound(new { message = $"User with id '{id}' not found" });
                 }
 
-                return Ok(user);
+                var userDto = new UserDto
+                {
+                    Id = user.Id,
+                    Name = user.Name,
+                    LastName = user.LastName,
+                    Username = user.Username,
+                    Email = user.Email,
+                    Identification = user.Identification,
+                    RoleName = user.Role?.Name ?? "",
+                    RoleId = user.RoleId
+                };
+
+                return Ok(userDto);
             }
             catch (Exception ex)
             {

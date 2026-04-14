@@ -20,10 +20,6 @@ var appSettingsSection = configuration.GetSection("AppSettings");
 builder.Services.Configure<AppSettings>(appSettingsSection);
 var appSettings = appSettingsSection.Get<AppSettings>();
 
-
-Console.WriteLine("AppSettings:");
-Console.WriteLine($"Jwt: Issuer={appSettings?.Jwt.Issuer}, Audience={appSettings?.Jwt.Audience}, SecretKey={appSettings?.Jwt.Key}, Expired={appSettings?.Jwt.Expired}");
-
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -60,6 +56,7 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ITokenUserService, TokenUserService>();
+builder.Services.AddScoped<IFileValidationService, FileValidationService>();
 builder.Services.AddScoped<IFileService, FileService>();
 
 builder.Services.AddAuthorization();
