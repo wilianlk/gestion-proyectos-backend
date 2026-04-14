@@ -55,7 +55,7 @@ namespace ProjectManagementApi.Utils
                 CreatedAt = project.CreatedAt,
                 UpdatedAt = project.UpdatedAt,
                 IsActive = project.IsActive,
-                Attachments = project.Attachments?.Select(a => new ProjectDocumentAttachmentDto
+                Attachments = project.Attachments?.Select(a => new AttachmentDto
                 {
                     Id = a.Id,
                     ProjectDocumentId = a.ProjectDocumentId,
@@ -66,7 +66,7 @@ namespace ProjectManagementApi.Utils
                     ContentType = a.ContentType,
                     CreatedAt = a.CreatedAt,
                     UpdatedAt = a.UpdatedAt
-                }).ToList() ?? new List<ProjectDocumentAttachmentDto>(),
+                }).ToList() ?? new List<AttachmentDto>(),
                 Requirements = project.Requirements?.Select(a => new RequirementDto
                 {
                     Id = a.Id,

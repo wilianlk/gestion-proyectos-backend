@@ -16,7 +16,7 @@ namespace ProjectManagementApi.Controllers
     public class ProjectDocumentsController : ControllerBase
     {
         private readonly IProjectDocumentRepository<ProjectDocument> _projectDocumentRepository;
-        private readonly IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> _attachmentRepository;
+        private readonly IAttachmentRepository<Attachment> _attachmentRepository;
         private readonly IFileService _fileService;
         private readonly ILogger<ProjectDocumentsController> _logger;
         private readonly ApplicationContext _context;
@@ -25,7 +25,7 @@ namespace ProjectManagementApi.Controllers
 
         public ProjectDocumentsController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
-            IProjectDocumentAttachmentRepository<ProjectDocumentAttachment> attachmentRepository,
+            IAttachmentRepository<Attachment> attachmentRepository,
             IFileService fileService,
             ILogger<ProjectDocumentsController> logger,
             ApplicationContext context,
@@ -182,7 +182,7 @@ namespace ProjectManagementApi.Controllers
                     {
                         var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture");
                         
-                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
+                        await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
                         {
                             ProjectDocumentId = project.Id,
                             Section = "Architecture",
@@ -308,7 +308,7 @@ namespace ProjectManagementApi.Controllers
                     {
                         var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
                         
-                        await _attachmentRepository.CreateAttachmentAsync(new ProjectDocumentAttachmentDto
+                        await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
                         {
                             ProjectDocumentId = project.Id,
                             Section = "UxCases",

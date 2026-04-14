@@ -16,7 +16,7 @@ namespace ProjectManagementApi.Context
         { }
 
         public DbSet<ProjectDocument> ProjectDocuments { get; set; }
-        public DbSet<ProjectDocumentAttachment> ProjectDocumentAttachments { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
         public DbSet<ProjectDocumentRequirement> ProjectDocumentRequirements { get; set; }
         public DbSet<ProjectDocumentIntegration> ProjectDocumentIntegrations { get; set; }
         public DbSet<ProjectDocumentRaciActor> ProjectDocumentRaciActors { get; set; }
@@ -39,7 +39,7 @@ namespace ProjectManagementApi.Context
                 entity.HasMany(x => x.RaciActors).WithOne(a => a.ProjectDocument).HasForeignKey(x => x.ProjectDocumentId);
             });
 
-            modelBuilder.Entity<ProjectDocumentAttachment>(entity =>
+            modelBuilder.Entity<Attachment>(entity =>
             {
                 entity.HasKey(x => x.Id);
             });

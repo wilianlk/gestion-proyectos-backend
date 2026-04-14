@@ -46,7 +46,7 @@ builder.Services.AddDbContext<ApplicationContext>();
 
 // Services
 builder.Services.AddScoped<IProjectDocumentRepository<ProjectDocument>, ProjectDocumentRepository>();
-builder.Services.AddScoped<IProjectDocumentAttachmentRepository<ProjectDocumentAttachment>, ProjectDocumentAttachmentRepository>();
+builder.Services.AddScoped<IAttachmentRepository<Attachment>, AttachmentRepository>();
 builder.Services.AddScoped<IProjectDocumentRequirementRepository<ProjectDocumentRequirement>, ProjectDocumentRequirementRepository>();
 builder.Services.AddScoped<IProjectDocumentIntegrationRepository<ProjectDocumentIntegration>, ProjectDocumentIntegrationRepository>();
 builder.Services.AddScoped<IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor>, ProjectDocumentRaciActorRepository>();

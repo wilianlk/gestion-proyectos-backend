@@ -1,7 +1,7 @@
 -- SQL para crear la tabla ProjectDocumentAttachments en Informix
 -- Esta tabla almacena los archivos adjuntos relacionados a los documentos de proyecto.
 
-CREATE TABLE ProjectDocumentAttachments (
+CREATE TABLE Attachments (
     Id SERIAL PRIMARY KEY,
     ProjectDocumentId INTEGER NOT NULL,
     Section LVARCHAR(255) NOT NULL,
@@ -12,5 +12,5 @@ CREATE TABLE ProjectDocumentAttachments (
     CreatedAt DATETIME YEAR TO SECOND NOT NULL,
     UpdatedAt DATETIME YEAR TO SECOND,
     IsActive BOOLEAN NOT NULL,
-    FOREIGN KEY (ProjectDocumentId) REFERENCES ProjectDocuments (Id) CONSTRAINT fk_ProjectDocumentAttachment_ProjectDocument
+    FOREIGN KEY (ProjectDocumentId) REFERENCES ProjectDocuments (Id) CONSTRAINT fk_Attachment_ProjectDocument
 );

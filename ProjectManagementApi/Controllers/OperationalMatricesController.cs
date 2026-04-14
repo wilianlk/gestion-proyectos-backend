@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using ProjectManagementApi.Context;
 using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
@@ -18,7 +19,10 @@ namespace ProjectManagementApi.Controllers
         private readonly IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> _raciActorRepository;
         private readonly IProjectDocumentRiskRepository<ProjectDocumentRisk> _riskRepository;
         private readonly IProjectDocumentTestCaseRepository<ProjectDocumentTestCase> _testCaseRepository;
+        private readonly IAttachmentRepository<Attachment> _attachmentRepository;
+        private readonly IFileService _fileService;
         private readonly ILogger<OperationalMatricesController> _logger;
+        private readonly ApplicationContext _context;
         private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
         private readonly ITokenUserService _tokenUserService;
 
@@ -29,7 +33,10 @@ namespace ProjectManagementApi.Controllers
             IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor> raciActorRepository,
             IProjectDocumentRiskRepository<ProjectDocumentRisk> riskRepository,
             IProjectDocumentTestCaseRepository<ProjectDocumentTestCase> testCaseRepository,
+            IAttachmentRepository<Attachment> attachmentRepository,
+            IFileService fileService,
             ILogger<OperationalMatricesController> logger,
+            ApplicationContext context,
             ITokenUserService tokenUserService)
         {
             _projectDocumentRepository = projectDocumentRepository;
@@ -38,7 +45,10 @@ namespace ProjectManagementApi.Controllers
             _raciActorRepository = raciActorRepository;
             _riskRepository = riskRepository;
             _testCaseRepository = testCaseRepository;
+            _attachmentRepository = attachmentRepository;
+            _fileService = fileService;
             _logger = logger;
+            _context = context;
             _tokenUserService = tokenUserService;
         }
 
@@ -46,70 +56,104 @@ namespace ProjectManagementApi.Controllers
         /// Method to create or update requerimientos for a project document
         /// </summary>
         /// <param name="dto">Requirements data</param>
+        /// <param name="files">Optional attachments to upload</param>
         /// <returns>Created requirements</returns>
         [HttpPost("[action]")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<List<RequirementDto>>> UpsertRequirements([FromBody] CreateRequirementDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<List<RequirementDto>>> UpsertRequirements(
+            [FromForm] CreateRequirementDto dto,
+            IFormFileCollection? files)
         {
-            try
+            if (dto.Requirements == null || dto.Requirements.Count == 0)
             {
-                if (dto.Requirements == null || dto.Requirements.Count == 0)
-                {
-                    return BadRequest(new { message = "No requirements provided" });
-                }
-
-                // Get current user from JWT token
-                var currentUser = await _tokenUserService.GetCurrentUser(User);
-                if (currentUser == null)
-                {
-                    return Unauthorized(new { message = "User information not found in token" });
-                }
-
-                var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                if (project == null)
-                {
-                    return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
-                }
-
-                await _requirementRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
-
-                var entities = dto.Requirements.Select(r => new ProjectDocumentRequirement
-                {
-                    ProjectDocumentId = project.Id,
-                    Code = StringSanitizer.SanitizeForInformix(r.Code),
-                    Description = StringSanitizer.SanitizeForInformix(r.Description),
-                    Type = StringSanitizer.SanitizeForInformix(r.Type),
-                    Priority = r.Priority,
-                    AcceptanceCriteria = StringSanitizer.SanitizeForInformix(r.AcceptanceCriteria),
-                    CreatedAt = DateTime.UtcNow,
-                    IsActive = true,
-                    Identification = currentUser.Identification,
-                    Username = currentUser.Username
-                }).ToList();
-
-                _requirementRepository.AddRange(entities);
-                await _requirementRepository.SaveChangesAsync();
-
-                var result = entities.Select(e => new RequirementDto
-                {
-                    Id = e.Id,
-                    ProjectDocumentId = e.ProjectDocumentId,
-                    Code = e.Code,
-                    Description = e.Description,
-                    Type = e.Type,
-                    Priority = e.Priority,
-                    AcceptanceCriteria = e.AcceptanceCriteria
-                }).ToList();
-
-                return Ok(result);
+                return BadRequest(new { message = "No requirements provided" });
             }
-            catch (Exception ex)
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                _logger.LogError(ex, "Error al crear o actualizar los requerimientos para el proyecto {ProjectCode}", dto.ProjectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                try
+                {
+                    var currentUser = await _tokenUserService.GetCurrentUser(User);
+                    if (currentUser == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return Unauthorized(new { message = "User information not found in token" });
+                    }
+
+                    var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
+                    if (project == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return NotFound(new { message = $"Project with code '{dto.ProjectCode}' not found" });
+                    }
+
+                    await _requirementRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
+
+                    var entities = dto.Requirements.Select(r => new ProjectDocumentRequirement
+                    {
+                        ProjectDocumentId = project.Id,
+                        Code = StringSanitizer.SanitizeForInformix(r.Code),
+                        Description = StringSanitizer.SanitizeForInformix(r.Description),
+                        Type = StringSanitizer.SanitizeForInformix(r.Type),
+                        Priority = r.Priority,
+                        AcceptanceCriteria = StringSanitizer.SanitizeForInformix(r.AcceptanceCriteria),
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = true,
+                        Identification = currentUser.Identification,
+                        Username = currentUser.Username
+                    }).ToList();
+
+                    _requirementRepository.AddRange(entities);
+                    await _requirementRepository.SaveChangesAsync();
+
+                    if (files != null && files.Count > 0)
+                    {
+                        foreach (var file in files)
+                        {
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "Requirements");
+                            
+                            await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
+                            {
+                                ProjectDocumentId = project.Id,
+                                Section = "Requirements",
+                                FileName = file.FileName,
+                                FilePath = filePath,
+                                FileSize = file.Length,
+                                ContentType = file.ContentType
+                            });
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var result = entities.Select(e => new RequirementDto
+                    {
+                        Id = e.Id,
+                        ProjectDocumentId = e.ProjectDocumentId,
+                        Code = e.Code,
+                        Description = e.Description,
+                        Type = e.Type,
+                        Priority = e.Priority,
+                        AcceptanceCriteria = e.AcceptanceCriteria
+                    }).ToList();
+
+                    return Ok(result);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    await transaction.RollbackAsync();
+                    return BadRequest(new { message = ex.Message });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error al crear o actualizar los requerimientos para el proyecto {ProjectCode}", dto.ProjectCode);
+                    return BadRequest(new { message = DefaultErrorMessage });
+                }
             }
         }
 

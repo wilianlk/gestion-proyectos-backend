@@ -32,6 +32,5 @@ namespace ProjectManagementApi.Models
 
         [Column("Username")]
         public string Username { get; set; }
-
     }
 }

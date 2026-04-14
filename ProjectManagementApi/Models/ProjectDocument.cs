@@ -127,7 +127,7 @@ namespace ProjectManagementApi.Models
         [Column("CreatedBy")]
         public string CreatedBy { get; set; }
 
-        public ICollection<ProjectDocumentAttachment> Attachments { get; set; } = new List<ProjectDocumentAttachment>();
+        public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
         public ICollection<ProjectDocumentRequirement> Requirements { get; set; } = new List<ProjectDocumentRequirement>();
         public ICollection<ProjectDocumentIntegration> Integrations { get; set; } = new List<ProjectDocumentIntegration>();
         public ICollection<ProjectDocumentRaciActor> RaciActors { get; set; } = new List<ProjectDocumentRaciActor>();

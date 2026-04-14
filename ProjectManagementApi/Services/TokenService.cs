@@ -64,7 +64,7 @@ namespace ProjectManagementApi.Services
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Issuer = _appSettings.Jwt.Issuer,
-                Audience = _appSettings.Jwt.Issuer,
+                Audience = _appSettings.Jwt.Audience,
                 Subject = claims,
                 Expires = DateTime.Now.AddHours(_appSettings.Jwt.Expired),
                 SigningCredentials = signingCredentials

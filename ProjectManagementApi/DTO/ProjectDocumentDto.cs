@@ -47,7 +47,7 @@ namespace ProjectManagementApi.DTO
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public bool IsActive { get; set; }
-        public List<ProjectDocumentAttachmentDto> Attachments { get; set; }
+        public List<AttachmentDto> Attachments { get; set; }
 
         // Section Status (calculated at runtime)
         public string? GeneralSectionStatus { get; set; }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Core;
 using Microsoft.Extensions.Logging;
+using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services;
 using ProjectManagementApi.Services.Contracts;
@@ -16,12 +17,12 @@ namespace ProjectManagementApi.Controllers
     [Authorize]
     public class AttachmentsController : ControllerBase
     {
-        private readonly IProjectDocumentAttachmentRepository<Models.ProjectDocumentAttachment> _attachmentRepository;
+        private readonly IAttachmentRepository<Attachment> _attachmentRepository;
         private readonly IFileService _fileService;
         private readonly ILogger<AttachmentsController> _logger;
 
         public AttachmentsController(
-            IProjectDocumentAttachmentRepository<Models.ProjectDocumentAttachment> attachmentRepository,
+            IAttachmentRepository<Models.Attachment> attachmentRepository,
             IFileService fileService,
             ILogger<AttachmentsController> logger)
         {
