@@ -20,6 +20,14 @@ var appSettingsSection = configuration.GetSection("AppSettings");
 builder.Services.Configure<AppSettings>(appSettingsSection);
 var appSettings = appSettingsSection.Get<AppSettings>();
 
+string[] ParseConfigList(string key) =>
+    (configuration.GetValue<string>(key) ?? string.Empty)
+        .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+var allowedOrigins = ParseConfigList("AllowedOrigins");
+var allowedHeaders = ParseConfigList("AllowedHeaders");
+var allowedMethods = ParseConfigList("AllowedMethods");
+
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -104,11 +112,42 @@ if (!app.Environment.IsProduction())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectManagementApi v1"));
 }
 
-app.UseCors(x =>
-    x.WithOrigins((builder.Configuration.GetSection("AllowedOrigins").Value ?? string.Empty).Split(";"))
-        .AllowCredentials().WithHeaders((builder.Configuration.GetSection("AllowedHeaders").Value ?? string.Empty).Split(";"))
-        .WithMethods((builder.Configuration.GetSection("AllowedMethods").Value ?? string.Empty).Split(";"))
-        .WithExposedHeaders("Content-Disposition"));
+app.UseCors(policy =>
+{
+    var allowAnyOrigin = allowedOrigins.Length == 0 || allowedOrigins.Contains("*");
+    var allowAnyHeader = allowedHeaders.Length == 0 || allowedHeaders.Contains("*");
+    var allowAnyMethod = allowedMethods.Length == 0 || allowedMethods.Contains("*");
+
+    if (allowAnyOrigin)
+    {
+        policy.AllowAnyOrigin();
+    }
+    else
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowCredentials();
+    }
+
+    if (allowAnyHeader)
+    {
+        policy.AllowAnyHeader();
+    }
+    else
+    {
+        policy.WithHeaders(allowedHeaders);
+    }
+
+    if (allowAnyMethod)
+    {
+        policy.AllowAnyMethod();
+    }
+    else
+    {
+        policy.WithMethods(allowedMethods);
+    }
+
+    policy.WithExposedHeaders("Content-Disposition");
+});
 
 app.UseHttpLogging();
 app.UseStaticFiles();
