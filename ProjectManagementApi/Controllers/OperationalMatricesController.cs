@@ -66,7 +66,7 @@ namespace ProjectManagementApi.Controllers
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<List<RequirementDto>>> UpsertRequirements(
             [FromForm] CreateRequirementDto dto,
-            IFormFileCollection? files)
+            [FromForm] IFormFileCollection? files)
         {
             if (dto.Requirements == null || dto.Requirements.Count == 0)
             {

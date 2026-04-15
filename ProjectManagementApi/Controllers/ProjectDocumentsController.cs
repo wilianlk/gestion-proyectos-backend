@@ -149,13 +149,8 @@ namespace ProjectManagementApi.Controllers
         public async Task<ActionResult<ProjectDocumentDto>> UpdateArchitectureSection(
             string projectCode, 
             [FromForm] UpdateArchitectureSectionDto dto,
-            [FromForm] IFormFileCollection files)
+            [FromForm] IFormFileCollection? files)
         {
-            if (files == null || files.Count == 0)
-            {
-                return BadRequest(new { message = "Se requiere al menos un archivo." });
-            }
-
             // Initialize transaction context
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
@@ -178,19 +173,22 @@ namespace ProjectManagementApi.Controllers
                     await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto, currentUser);
 
                     // Process and upload attachments
-                    foreach (var file in files)
+                    if (files != null && files.Count > 0)
                     {
-                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture");
-                        
-                        await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
+                        foreach (var file in files)
                         {
-                            ProjectDocumentId = project.Id,
-                            Section = "Architecture",
-                            FileName = file.FileName,
-                            FilePath = filePath,
-                            FileSize = file.Length,
-                            ContentType = file.ContentType
-                        });
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture");
+                            
+                            await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
+                            {
+                                ProjectDocumentId = project.Id,
+                                Section = "Architecture",
+                                FileName = file.FileName,
+                                FilePath = filePath,
+                                FileSize = file.Length,
+                                ContentType = file.ContentType
+                            });
+                        }
                     }
 
                     // Commit transaction if all operations succeed
@@ -274,13 +272,8 @@ namespace ProjectManagementApi.Controllers
         public async Task<ActionResult<ProjectDocumentDto>> UpdateUxCasesSection(
             string projectCode, 
             [FromForm] UpdateUxCasesSectionDto dto,
-            [FromForm] IFormFileCollection files)
+            [FromForm] IFormFileCollection? files)
         {
-            if (files == null || files.Count == 0)
-            {
-                return BadRequest(new { message = "Se requiere al menos un archivo." });
-            }
-
             // Initialize transaction context
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
@@ -304,19 +297,22 @@ namespace ProjectManagementApi.Controllers
                     await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto, currentUser);
 
                     // Process and upload attachments
-                    foreach (var file in files)
+                    if (files != null && files.Count > 0)
                     {
-                        var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
-                        
-                        await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
+                        foreach (var file in files)
                         {
-                            ProjectDocumentId = project.Id,
-                            Section = "UxCases",
-                            FileName = file.FileName,
-                            FilePath = filePath,
-                            FileSize = file.Length,
-                            ContentType = file.ContentType
-                        });
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
+                            
+                            await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
+                            {
+                                ProjectDocumentId = project.Id,
+                                Section = "UxCases",
+                                FileName = file.FileName,
+                                FilePath = filePath,
+                                FileSize = file.Length,
+                                ContentType = file.ContentType
+                            });
+                        }
                     }
 
                     // Commit transaction if all operations succeed
