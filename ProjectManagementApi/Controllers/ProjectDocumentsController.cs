@@ -224,10 +224,9 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [Consumes("multipart/form-data")]
         public async Task<ActionResult<ProjectDocumentDto>> UpdateGeneralSection(
             string projectCode, 
-            [FromForm] UpdateProjectGeneralSectionDto dto)
+            [FromBody] UpdateProjectGeneralSectionDto dto)
         {
             try
             {
