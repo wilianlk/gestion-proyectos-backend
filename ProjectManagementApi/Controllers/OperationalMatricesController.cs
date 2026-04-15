@@ -70,7 +70,7 @@ namespace ProjectManagementApi.Controllers
         {
             if (dto.Requirements == null || dto.Requirements.Count == 0)
             {
-                return BadRequest(new { message = "No requirements provided" });
+                return BadRequest(new { message = "No se proporcionaron requerimientos" });
             }
 
             using (var transaction = await _context.Database.BeginTransactionAsync())
@@ -173,7 +173,7 @@ namespace ProjectManagementApi.Controllers
             {
                 if (dto.Integrations == null || dto.Integrations.Count == 0)
                 {
-                    return BadRequest(new { message = "No integrations provided" });
+                    return BadRequest(new { message = "No se proporcionaron integraciones" });
                 }
 
                 // Get current user from JWT token
@@ -238,7 +238,7 @@ namespace ProjectManagementApi.Controllers
             {
                 if (dto.Rows == null || dto.Rows.Count == 0)
                 {
-                    return BadRequest(new { message = "No RACI matrix rows provided" });
+                    return BadRequest(new { message = "No se proporcionaron filas para la matriz RACI" });
                 }
 
                 // Get current user from JWT token
@@ -307,7 +307,7 @@ namespace ProjectManagementApi.Controllers
             {
                 if (dto.Risks == null || dto.Risks.Count == 0)
                 {
-                    return BadRequest(new { message = "No risks provided" });
+                    return BadRequest(new { message = "No se proporcionaron riesgos" });
                 }
 
                 // Get current user from JWT token
@@ -378,7 +378,7 @@ namespace ProjectManagementApi.Controllers
             {
                 if (dto.TestCases == null || dto.TestCases.Count == 0)
                 {
-                    return BadRequest(new { message = "No test cases provided" });
+                    return BadRequest(new { message = "No se proporcionaron casos de prueba" });
                 }
 
                 // Get current user from JWT token

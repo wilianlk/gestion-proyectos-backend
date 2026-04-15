@@ -57,7 +57,7 @@ namespace ProjectManagementApi.Controllers
 
                 if (!System.IO.File.Exists(fullPath))
                 {
-                    return NotFound(new { message = "File not found on server" });
+                    return NotFound(new { message = "El archivo solicitado no existe" });
                 }
 
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
@@ -66,6 +66,46 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error downloading attachment with id {Id}", id);
+                return BadRequest(new { message = "Ocurrió un error al procesar la solicitud." });
+            }
+        }
+
+        /// <summary>
+        /// Method to delete an attachment by id
+        /// </summary>
+        /// <param name="id">Attachment id to delete</param>
+        /// <returns>200 if deleted, 404 if not found</returns>
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var attachment = await _attachmentRepository.GetByIdAsync(id);
+                if (attachment == null)
+                {
+                    return NotFound(new { message = $"Attachment with id '{id}' not found" });
+                }
+
+                var fullPath = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot",
+                    attachment.FilePath
+                );
+
+                if (System.IO.File.Exists(fullPath))
+                {
+                    System.IO.File.Delete(fullPath);
+                }
+
+                await _attachmentRepository.DeleteAttachmentAsync(id);
+
+                return Ok(new { message = "Archivo eliminado satisfactoriamente" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting attachment with id {Id}", id);
                 return BadRequest(new { message = "Ocurrió un error al procesar la solicitud." });
             }
         }
