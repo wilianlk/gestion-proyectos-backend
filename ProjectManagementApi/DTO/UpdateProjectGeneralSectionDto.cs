@@ -7,12 +7,14 @@ namespace ProjectManagementApi.DTO
         public string FunctionalLead { get; set; } = null!;
         public string TechnicalLead { get; set; } = null!;
         public string DocumentStatus { get; set; } = null!;
-        public string ProjectVision { get; set; } = null!;
-        public string GeneralObjective { get; set; } = null!;
-        public string SpecificObjectives { get; set; } = null!;
-        public string ExpectedValue { get; set; } = null!;
-        public string Scope { get; set; } = null!;
-        public string Exclusions { get; set; } = null!;
+        public string Department { get; set; } = null!;
+        public string Division { get; set; } = null!;
+        public string? ProjectVision { get; set; }
+        public string? GeneralObjective { get; set; }
+        public string? SpecificObjectives { get; set; }
+        public string? ExpectedValue { get; set; }
+        public string? Scope { get; set; }
+        public string? Exclusions { get; set; }
     }
 
 }

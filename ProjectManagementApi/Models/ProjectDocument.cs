@@ -27,6 +27,14 @@ namespace ProjectManagementApi.Models
         [Column("DocumentStatus")]
         public string DocumentStatus { get; set; }
 
+        [Required]
+        [Column("Department")]
+        public string Department { get; set; }
+
+        [Required]
+        [Column("Division")]
+        public string Division { get; set; }
+
         [Column("ProjectVision")]
         public string? ProjectVision { get; set; }
 

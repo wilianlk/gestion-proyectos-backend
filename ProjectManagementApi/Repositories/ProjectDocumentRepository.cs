@@ -111,6 +111,8 @@ namespace ProjectManagementApi.Repositories
                 entity.FunctionalLead = StringSanitizer.SanitizeForInformix(dto.FunctionalLead);
                 entity.TechnicalLead = StringSanitizer.SanitizeForInformix(dto.TechnicalLead);
                 entity.DocumentStatus = StringSanitizer.SanitizeForInformix(dto.DocumentStatus);
+                entity.Department = StringSanitizer.SanitizeForInformix(dto.Department);
+                entity.Division = StringSanitizer.SanitizeForInformix(dto.Division);
                 entity.ProjectVision = StringSanitizer.SanitizeForInformix(dto.ProjectVision);
                 entity.GeneralObjective = StringSanitizer.SanitizeForInformix(dto.GeneralObjective);
                 entity.SpecificObjectives = StringSanitizer.SanitizeForInformix(dto.SpecificObjectives);
@@ -143,7 +145,7 @@ namespace ProjectManagementApi.Repositories
                 entity.SoftwareStack = StringSanitizer.SanitizeForInformix(dto.SoftwareStack);
                 entity.HardwareArchitecture = StringSanitizer.SanitizeForInformix(dto.HardwareArchitecture);
                 entity.SecurityControl = StringSanitizer.SanitizeForInformix(dto.SecurityControl);
-                entity.ExpectedConcurrentUsers = dto.ExpectedConcurrentUsers;
+                entity.ExpectedConcurrentUsers = dto.ExpectedConcurrentUsers ?? 0;
                 entity.SlaResponseTime = StringSanitizer.SanitizeForInformix(dto.SlaResponseTime);
                 entity.UpdatedAt = DateTime.UtcNow;
                 entity.Identification = user.Identification;
