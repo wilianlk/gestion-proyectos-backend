@@ -1,0 +1,485 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ProjectManagementApi</name>
+    </assembly>
+    <members>
+        <member name="T:ProjectManagementApi.Controllers.AttachmentsController">
+            <summary>
+            Controlador para la gestión de descarga de archivos adjuntos
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.AttachmentsController.Download(System.Int32)">
+            <summary>
+            Method to download an attachment by id
+            </summary>
+            <param name="id">Attachment id to download</param>
+            <returns>File stream if found, 404 otherwise</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.AttachmentsController.Delete(System.Int32)">
+            <summary>
+            Method to delete an attachment by id
+            </summary>
+            <param name="id">Attachment id to delete</param>
+            <returns>200 if deleted, 404 if not found</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.OperationalMatricesController.UpsertRequirements(ProjectManagementApi.DTO.CreateRequirementDto,Microsoft.AspNetCore.Http.IFormFileCollection)">
+            <summary>
+            Method to create or update requerimientos for a project document
+            </summary>
+            <param name="dto">Requirements data</param>
+            <param name="files">Optional attachments to upload</param>
+            <returns>Created requirements</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.OperationalMatricesController.UpsertIntegrations(ProjectManagementApi.DTO.CreateIntegrationDto)">
+            <summary>
+            Method to create or update integrations for a project document
+            </summary>
+            <param name="dto">Integrations data</param>
+            <returns>Created integrations</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.OperationalMatricesController.UpsertRaciActor(ProjectManagementApi.DTO.CreateRaciActorDto)">
+            <summary>
+            Method to create or update RACI actors for a project document
+            </summary>
+            <param name="dto">RACI Actors data</param>
+            <returns>Created RACI actors</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.OperationalMatricesController.UpsertRisks(ProjectManagementApi.DTO.CreateRiskDto)">
+            <summary>
+            Method to create or update risks for a project document
+            </summary>
+            <param name="dto">Risks data</param>
+            <returns>Created risks</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.OperationalMatricesController.UpsertTestCases(ProjectManagementApi.DTO.CreateTestCaseDto)">
+            <summary>
+            Method to create or update test cases for a project document
+            </summary>
+            <param name="dto">Test cases data</param>
+            <returns>Created test cases</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.Create(ProjectManagementApi.DTO.CreateProjectDocumentDto)">
+            <summary>
+            Method to create a new project document with general section (must be created first before other sections)
+            </summary>
+            <param name="dto">Project document data with general section fields</param>
+            <returns>Created project document</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.GetByProjectCode(System.String)">
+            <summary>
+            Method to get project by project code with all fields and attachments
+            </summary>
+            <param name="projectCode">Project code to search</param>
+            <returns>Project with all sections and attachments grouped by section</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.GetAll">
+            <summary>
+            Method to get all project documents ordered by creation date (descending)
+            </summary>
+            <returns>List of project documents with section status</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateArchitectureSection(System.String,ProjectManagementApi.DTO.UpdateArchitectureSectionDto,Microsoft.AspNetCore.Http.IFormFileCollection)">
+            <summary>
+            Method to update architecture section fields and upload attachments in a single request
+            </summary>
+            <param name="projectCode">Project code to update</param>
+            <param name="dto">Architecture section data</param>
+            <param name="files">Optional attachments to upload</param>
+            <returns>Updated project with attachments</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateGeneralSection(System.String,ProjectManagementApi.DTO.UpdateProjectGeneralSectionDto)">
+            <summary>
+            Method to update general section fields and upload attachments in a single request
+            </summary>
+            <param name="projectCode">Project code to update</param>
+            <param name="dto">General section data</param>
+            <returns>Updated project</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateUxCasesSection(System.String,ProjectManagementApi.DTO.UpdateUxCasesSectionDto,Microsoft.AspNetCore.Http.IFormFileCollection)">
+            <summary>
+            Method to update UX Cases section fields and upload attachments in a single request
+            Uses database transaction to ensure data integrity - all changes are committed together or rolled back on error
+            </summary>
+            <param name="projectCode">Project code to update</param>
+            <param name="dto">UX Cases section data</param>
+            <param name="files">Optional attachments to upload</param>
+            <returns>Updated project with attachments</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateConstraintsSection(System.String,ProjectManagementApi.DTO.UpdateConstraintsSectionDto)">
+            <summary>
+            Method to update Constraints section fields in a single request
+            </summary>
+            <param name="projectCode">Project code to update</param>
+            <param name="dto">Constraints section data</param>
+            <returns>Updated project</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateAreasIntegrationsSection(System.String,ProjectManagementApi.DTO.UpdateAreasIntegrationsSectionDto)">
+            <summary>
+            Method to update Areas and Integrations section fields in a single request
+            </summary>
+            <param name="projectCode">Project code to update</param>
+            <param name="dto">Areas and Integrations section data</param>
+            <returns>Updated project</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateRaciSection(System.String,ProjectManagementApi.DTO.UpdateRaciSectionDto)">
+            <summary>
+            Method to update RACI section fields in a single request
+            </summary>
+            <param name="projectCode">Project code to update</param>
+            <param name="dto">RACI section data</param>
+            <returns>Updated project</returns>
+        </member>
+        <member name="T:ProjectManagementApi.Controllers.RolesController">
+            <summary>
+            Controlador para la gestión de roles del sistema
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.RolesController.GetAll">
+            <summary>
+            Method to get all roles
+            </summary>
+            <returns>List of all roles</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.RolesController.GetById(System.Int32)">
+            <summary>
+            Method to get role by id
+            </summary>
+            <param name="id">Role id to search</param>
+            <returns>Role if found, 404 otherwise</returns>
+        </member>
+        <member name="T:ProjectManagementApi.Controllers.SecurityController">
+            <summary>
+            Controlador para la gestión de seguridad y autenticación
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.SecurityController.Login(ProjectManagementApi.DTO.LoginDto)">
+            <summary>
+            Method to authenticate user and return JWT token
+            </summary>
+            <param name="dto">Login credentials (Username, Password)</param>
+            <returns>JWT token if credentials are valid, 401 otherwise</returns>
+        </member>
+        <member name="T:ProjectManagementApi.Controllers.UsersController">
+            <summary>
+            Controlador para la gestión de usuarios del sistema
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.UsersController.GetAll">
+            <summary>
+            Method to get all users
+            </summary>
+            <returns>List of all users</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.UsersController.GetById(System.Int32)">
+            <summary>
+            Method to get user by id
+            </summary>
+            <param name="id">User id to search</param>
+            <returns>User if found, 404 otherwise</returns>
+        </member>
+        <member name="T:ProjectManagementApi.Repositories.IRoleRepository">
+            <summary>
+            Interfaz para el repositorio de roles
+            </summary>
+        </member>
+        <member name="T:ProjectManagementApi.Repositories.IUserRepository">
+            <summary>
+            Interfaz para el repositorio de usuarios
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.IUserRepository.GetByUsernameAsync(System.String)">
+            <summary>
+            Get user by username including role information
+            </summary>
+            <param name="username">Username to search</param>
+            <returns>User object with Role if found</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.IUserRepository.GetAllWithRoleAsync">
+            <summary>
+            Get all users including role information
+            </summary>
+            <returns>List of all users with their Role</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.IUserRepository.GetByIdWithRoleAsync(System.Int32)">
+            <summary>
+            Get user by id including role information
+            </summary>
+            <param name="id">User id to search</param>
+            <returns>User object with Role if found</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.CreateAsync(ProjectManagementApi.DTO.CreateProjectDocumentDto,ProjectManagementApi.Models.User)">
+            Description: Create a new project document (initial general section)
+            Input Parameters: 
+                 * dto (CreateProjectDocumentDto): Project document data
+                 * user (User): Current authenticated user from JWT token
+            Output Parameters: Created project document
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.GetByProjectCodeAsync(System.String)">
+            Description: Get project document by project code
+            Input Parameters: 
+                 * projectCode (string): Project code to search
+            Output Parameters: Project document if found, null otherwise
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.GetByProjectCodeDetailedAsync(System.String)">
+            Description: Get project document by project code with all attachments
+            Input Parameters: 
+                 * projectCode (string): Project code to search
+            Output Parameters: Project document with attachments if found, null otherwise
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.ExistsByProjectCodeAsync(System.String)">
+            Description: Check if project code already exists
+            Input Parameters: 
+                 * projectCode (string): Project code to check
+            Output Parameters: True if exists, false otherwise
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.UpdateGeneralSectionAsync(System.String,ProjectManagementApi.DTO.UpdateProjectGeneralSectionDto,ProjectManagementApi.Models.User)">
+            Description: Update only general section fields
+            Input Parameters: 
+                 * projectCode (string): Project code to update
+                 * dto (UpdateProjectGeneralSectionDto): General section data
+            Output Parameters: None
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.UpdateArchitectureSectionAsync(System.String,ProjectManagementApi.DTO.UpdateArchitectureSectionDto,ProjectManagementApi.Models.User)">
+            Description: Update only architecture section fields
+            Input Parameters: 
+                 * projectCode (string): Project code to update
+                 * dto (UpdateArchitectureSectionDto): Architecture section data
+            Output Parameters: None
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.UpdateUxCasesSectionAsync(System.String,ProjectManagementApi.DTO.UpdateUxCasesSectionDto,ProjectManagementApi.Models.User)">
+            Description: Update only UX Cases section fields
+            Input Parameters: 
+                 * projectCode (string): Project code to update
+                 * dto (UpdateUxCasesSectionDto): UX Cases section data
+            Output Parameters: None
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.UpdateConstraintsSectionAsync(System.String,ProjectManagementApi.DTO.UpdateConstraintsSectionDto,ProjectManagementApi.Models.User)">
+            Description: Update only Constraints section fields
+            Input Parameters: 
+                 * projectCode (string): Project code to update
+                 * dto (UpdateConstraintsSectionDto): Constraints section data
+            Output Parameters: None
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.UpdateAreasIntegrationsSectionAsync(System.String,ProjectManagementApi.DTO.UpdateAreasIntegrationsSectionDto,ProjectManagementApi.Models.User)">
+            Description: Update only Areas and Integrations section fields
+            Input Parameters: 
+                 * projectCode (string): Project code to update
+                 * dto (UpdateAreasIntegrationsSectionDto): Areas and Integrations section data
+            Output Parameters: None
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.UpdateRaciSectionAsync(System.String,ProjectManagementApi.DTO.UpdateRaciSectionDto,ProjectManagementApi.Models.User)">
+            Description: Update only RACI section fields
+            Input Parameters: 
+                 * projectCode (string): Project code to update
+                 * dto (UpdateRaciSectionDto): RACI section data
+            Output Parameters: None
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.ProjectDocumentRepository.GetAllOrderedAsync">
+            Description: Get all project documents ordered by creation date (descending)
+            Input Parameters: None
+            Output Parameters: List of project documents
+        </member>
+        <member name="T:ProjectManagementApi.Repositories.RoleRepository">
+            <summary>
+            Repositorio para la gestión de roles en la base de datos
+            </summary>
+        </member>
+        <member name="T:ProjectManagementApi.Repositories.UserRepository">
+            <summary>
+            Repositorio para la gestión de usuarios en la base de datos
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.UserRepository.GetByUsernameAsync(System.String)">
+            <summary>
+            Description: Get user by username including role information
+            Input Parameters: 
+                * username (string): Username to search
+            Output Parameters: User object with Role if found, null otherwise
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.UserRepository.GetAllWithRoleAsync">
+            <summary>
+            Get all users including role information
+            </summary>
+            <returns>List of all users with their associated Role</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.UserRepository.GetByIdWithRoleAsync(System.Int32)">
+            <summary>
+            Get user by id including role information
+            </summary>
+            <param name="id">Unique identifier of the user to search</param>
+            <returns>User object with its associated Role if found, otherwise null</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Services.Contracts.IFileService.UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile,System.Int32,System.String)">
+            <summary>
+            Upload a file to the server after validation
+            </summary>
+        </member>
+        <member name="T:ProjectManagementApi.Services.Contracts.ITokenService">
+            <summary>
+            Interfaz para el servicio de generación de tokens JWT
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Services.Contracts.ITokenService.GenerateToken(ProjectManagementApi.Models.User)">
+            <summary>
+            Generate a JWT token for a user
+            </summary>
+            <param name="user">User object</param>
+            <returns>JWT token string</returns>
+        </member>
+        <member name="T:ProjectManagementApi.Services.Contracts.ITokenUserService">
+            <summary>
+            Interfaz para el servicio de extracción de usuario desde el token
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Services.Contracts.ITokenUserService.GetCurrentUser(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Extract user information from JWT claims
+            </summary>
+            <param name="claimsPrincipal">JWT claims from the request</param>
+            <returns>User object with basic information</returns>
+        </member>
+        <member name="T:ProjectManagementApi.Services.FileService">
+            <summary>
+            Service for file operations (upload, delete, URL generation)
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Services.FileService.UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile,System.Int32,System.String)">
+            Description: Upload a file to the server after validation
+            Input Parameters: 
+                 * file (IFormFile): File to upload
+                 * projectId (int): Project id for folder organization
+                 * section (string): Section name for folder organization
+            Output Parameters: Relative path of the saved file
+        </member>
+        <member name="M:ProjectManagementApi.Services.FileService.DeleteFileAsync(System.String)">
+            Description: Delete a file from the server
+            Input Parameters: 
+                 * filePath (string): Relative path of the file
+            Output Parameters: True if deleted, false otherwise
+        </member>
+        <member name="M:ProjectManagementApi.Services.FileService.GetFileUrl(System.String)">
+            Description: Get the full URL for a file
+            Input Parameters: 
+                 * filePath (string): Relative path of the file
+            Output Parameters: Full URL of the file
+        </member>
+        <member name="T:ProjectManagementApi.Services.FileValidationService">
+            <summary>
+            Service for validating uploaded files (extension, content type, and size)
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Services.FileValidationService.ValidateFile(Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            Description: Validate a file against configured allowed extensions, content types, and max size
+            Input Parameters: 
+                * file (IFormFile): File to validate
+            Output Parameters: Tuple with (isValid, errorMessage) - returns error message if validation fails
+            </summary>
+        </member>
+        <member name="T:ProjectManagementApi.Services.TokenService">
+            <summary>
+            Servicio para la generación de tokens JWT
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Services.TokenService.GenerateToken(ProjectManagementApi.Models.User)">
+            <summary>
+            Description: Generate a JWT token for a user
+            Input Parameters: 
+                * user (User): User object containing user information
+            Output Parameters: JWT token string
+            </summary>
+        </member>
+        <member name="T:ProjectManagementApi.Services.TokenUserService">
+            <summary>
+            Servicio para extraer información del usuario desde el token JWT
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Services.TokenUserService.GetCurrentUser(System.Security.Claims.ClaimsPrincipal)">
+            <summary>
+            Description: Extract user information from JWT claims
+            Input Parameters: 
+                * claimsPrincipal (ClaimsPrincipal): JWT claims from the request
+            Output Parameters: User object with basic information (Id, Username, Name, LastName, RoleId, Role)
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateGeneralSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the General section
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing general section fields
+            Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incomplete" otherwise
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateArchitectureSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the Architecture section
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing architecture section fields
+            Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateUxCasesSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the UX Cases section
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing UX cases section fields
+            Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateConstraintsSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the Constraints section
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing constraints section fields
+            Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateAreasIntegrationsSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the Areas Integrations section
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing areas integrations section fields
+            Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateRaciSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the RACI section
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing RACI section fields
+            Output Parameters: Status string - "Pendiente" if no fields filled, "Completo" if all fields filled, "Incompleto" otherwise
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateRiskSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the Risk section based on integrations
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing integrations collection
+            Output Parameters: Status string - "Pendiente" if no complete integrations found, "Completo" if at least one integration has all fields filled
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateTestCaseSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
+            <summary>
+            Description: Calculate the completion status of the Test Case section based on test cases
+            Input Parameters: 
+                * project (ProjectDocument): Project document object containing test cases collection
+            Output Parameters: Status string - "Pendiente" if no complete test cases found, "Completo" if at least one test case has all fields filled
+            </summary>
+        </member>
+        <member name="T:ProjectManagementApi.Utils.StringSanitizer">
+            <summary>
+            Utility class for sanitizing strings to ensure compatibility with Informix database
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Utils.StringSanitizer.SanitizeForInformix(System.String)">
+            <summary>
+            Sanitizes text by replacing Unicode special characters with ASCII equivalents.
+            This prevents "Code-set conversion failed" errors in Informix when writing data.
+            </summary>
+            <param name="text">Text to sanitize</param>
+            <returns>Sanitized text with Unicode characters replaced by ASCII equivalents</returns>
+        </member>
+    </members>
+</doc>
