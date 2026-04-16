@@ -9,7 +9,7 @@ CREATE TABLE ProjectDocuments (
     FunctionalLead LVARCHAR(255),
     TechnicalLead LVARCHAR(255),
     DocumentStatus LVARCHAR(100) NOT NULL,
-    Department LVARCHAR(255),
+    Area LVARCHAR(255),
     Division LVARCHAR(255),
     ProjectVision TEXT,
     GeneralObjective TEXT,

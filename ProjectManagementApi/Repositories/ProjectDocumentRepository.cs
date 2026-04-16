@@ -33,6 +33,8 @@ namespace ProjectManagementApi.Repositories
                 FunctionalLead = StringSanitizer.SanitizeForInformix(dto.FunctionalLead),
                 TechnicalLead = StringSanitizer.SanitizeForInformix(dto.TechnicalLead),
                 DocumentStatus = StringSanitizer.SanitizeForInformix(dto.DocumentStatus),
+                Area = StringSanitizer.SanitizeForInformix(dto.Area),
+                Division = StringSanitizer.SanitizeForInformix(dto.Division),
                 ProjectVision = StringSanitizer.SanitizeForInformix(dto.ProjectVision),
                 GeneralObjective = StringSanitizer.SanitizeForInformix(dto.GeneralObjective),
                 SpecificObjectives = StringSanitizer.SanitizeForInformix(dto.SpecificObjectives),
@@ -111,7 +113,7 @@ namespace ProjectManagementApi.Repositories
                 entity.FunctionalLead = StringSanitizer.SanitizeForInformix(dto.FunctionalLead);
                 entity.TechnicalLead = StringSanitizer.SanitizeForInformix(dto.TechnicalLead);
                 entity.DocumentStatus = StringSanitizer.SanitizeForInformix(dto.DocumentStatus);
-                entity.Department = StringSanitizer.SanitizeForInformix(dto.Department);
+                entity.Area = StringSanitizer.SanitizeForInformix(dto.Area);
                 entity.Division = StringSanitizer.SanitizeForInformix(dto.Division);
                 entity.ProjectVision = StringSanitizer.SanitizeForInformix(dto.ProjectVision);
                 entity.GeneralObjective = StringSanitizer.SanitizeForInformix(dto.GeneralObjective);

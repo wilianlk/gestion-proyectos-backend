@@ -24,6 +24,7 @@ namespace ProjectManagementApi.Context
         public DbSet<ProjectDocumentTestCase> ProjectDocumentTestCases { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Area> Areas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -70,6 +71,11 @@ namespace ProjectManagementApi.Context
             });
 
             modelBuilder.Entity<Role>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+            });
+
+            modelBuilder.Entity<Area>(entity =>
             {
                 entity.HasKey(x => x.Id);
             });

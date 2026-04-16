@@ -28,8 +28,8 @@ namespace ProjectManagementApi.Models
         public string DocumentStatus { get; set; }
 
         [Required]
-        [Column("Department")]
-        public string Department { get; set; }
+        [Column("Area")]
+        public string Area { get; set; }
 
         [Required]
         [Column("Division")]

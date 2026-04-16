@@ -7,7 +7,7 @@ namespace ProjectManagementApi.DTO
         public string FunctionalLead { get; set; } = null!;
         public string TechnicalLead { get; set; } = null!;
         public string DocumentStatus { get; set; } = null!;
-        public string Department { get; set; } = null!;
+        public string Area { get; set; } = null!;
         public string Division { get; set; } = null!;
         public string? ProjectVision { get; set; }
         public string? GeneralObjective { get; set; }

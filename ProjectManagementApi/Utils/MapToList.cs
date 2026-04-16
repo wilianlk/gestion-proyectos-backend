@@ -16,6 +16,8 @@ namespace ProjectManagementApi.Utils
                 FunctionalLead = project.FunctionalLead,
                 TechnicalLead = project.TechnicalLead,
                 DocumentStatus = project.DocumentStatus,
+                Area = project.Area,
+                Division = project.Division,
                 ProjectVision = project.ProjectVision,
                 GeneralObjective = project.GeneralObjective,
                 SpecificObjectives = project.SpecificObjectives,
@@ -47,13 +49,7 @@ namespace ProjectManagementApi.Utils
                 OperationSupport = project.OperationSupport,
                 CreatedAt = project.CreatedAt,
                 UpdatedAt = project.UpdatedAt,
-                IsActive = project.IsActive,
-                GeneralSectionStatus = CalculateStatus.CalculateGeneralSectionStatus(project),
-                ArchitectureSectionStatus = CalculateStatus.CalculateArchitectureSectionStatus(project),
-                UxCasesSectionStatus = CalculateStatus.CalculateUxCasesSectionStatus(project),
-                ConstraintsSectionStatus = CalculateStatus.CalculateConstraintsSectionStatus(project),
-                AreasIntegrationsSectionStatus = CalculateStatus.CalculateAreasIntegrationsSectionStatus(project),
-                RaciSectionStatus = CalculateStatus.CalculateRaciSectionStatus(project)
+                IsActive = project.IsActive
             };
         }
     }

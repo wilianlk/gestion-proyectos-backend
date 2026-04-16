@@ -19,6 +19,8 @@ namespace ProjectManagementApi.Utils
                 FunctionalLead = project.FunctionalLead,
                 TechnicalLead = project.TechnicalLead,
                 DocumentStatus = project.DocumentStatus,
+                Area = project.Area,
+                Division = project.Division,
                 ProjectVision = project.ProjectVision,
                 GeneralObjective = project.GeneralObjective,
                 SpecificObjectives = project.SpecificObjectives,
