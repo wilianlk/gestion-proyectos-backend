@@ -105,13 +105,11 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+var hasSpaBuild = File.Exists(Path.Combine(app.Environment.WebRootPath ?? string.Empty, "index.html"));
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsProduction())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectManagementApi v1"));
-}
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectManagementApi v1"));
 
 app.UseCors(policy =>
 {
@@ -151,10 +149,19 @@ app.UseCors(policy =>
 });
 
 app.UseHttpLogging();
+if (hasSpaBuild)
+{
+    app.UseDefaultFiles();
+}
 app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+if (hasSpaBuild)
+{
+    app.MapFallbackToFile("index.html");
+}
 
 app.Run();

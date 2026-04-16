@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <SpaRoot>..\..\project-management-frontend\</SpaRoot>
+    <SpaDist>$(SpaRoot)dist\</SpaDist>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,5 +40,19 @@
       <HintPath>../Libraries/DatabasesLib/DatabasesLib.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PublishSpaAssets" AfterTargets="ComputeFilesToPublish" Condition="Exists('$(SpaRoot)package.json')">
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+
+    <ItemGroup>
+      <SpaFiles Include="$(SpaDist)**\*" />
+      <ResolvedFileToPublish Include="@(SpaFiles->'%(FullPath)')">
+        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 
 </Project>
