@@ -4,8 +4,8 @@
 CREATE TABLE ProjectDocumentRisks (
     Id SERIAL PRIMARY KEY,
     ProjectDocumentId INTEGER NOT NULL,
-    Risk LVARCHAR(255),
-    Impact TEXT,
+    Risk TEXT,
+    Impact LVARCHAR(255),
     Probability LVARCHAR(255),
     Mitigation TEXT,
     Owner LVARCHAR(255),

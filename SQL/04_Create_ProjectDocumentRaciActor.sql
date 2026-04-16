@@ -4,7 +4,7 @@
 CREATE TABLE ProjectDocumentRaciActors (
     Id SERIAL PRIMARY KEY,
     ProjectDocumentId INTEGER NOT NULL,
-    Activity LVARCHAR(255),
+    Activity TEXT,
     Type LVARCHAR(255),
     Area LVARCHAR(255),
     Role LVARCHAR(255),
