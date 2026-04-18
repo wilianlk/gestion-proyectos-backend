@@ -147,19 +147,22 @@ namespace ProjectManagementApi.Utils
         }
 
         /// <summary>
-        /// Description: Calculate the completion status of the Risk section based on integrations
+        /// Description: Calculate the completion status of the Risk section based on risks
         /// Input Parameters: 
-        ///     * project (ProjectDocument): Project document object containing integrations collection
-        /// Output Parameters: Status string - "Pendiente" if no complete integrations found, "Completo" if at least one integration has all fields filled
+        ///     * project (ProjectDocument): Project document object containing risks collection
+        /// Output Parameters: Status string - "Pendiente" if no complete risks found, "Completo" if at least one risk has all fields filled
         /// </summary>
         public static string CalculateRiskSectionStatus(ProjectDocument project)
         {
-            var hasCompleteIntegration = project.Integrations?.Any(i =>
-                !string.IsNullOrEmpty(i.System) &&
-                !string.IsNullOrEmpty(i.Description)
+            var hasCompleteRisk = project.Risks?.Any(r =>
+                !string.IsNullOrEmpty(r.Risk) &&
+                !string.IsNullOrEmpty(r.Impact) &&
+                !string.IsNullOrEmpty(r.Probability) &&
+                !string.IsNullOrEmpty(r.Mitigation) &&
+                !string.IsNullOrEmpty(r.Owner)
             ) ?? false;
 
-            if (!hasCompleteIntegration) return "Pendiente";
+            if (!hasCompleteRisk) return "Pendiente";
             return "Completo";
         }
 
