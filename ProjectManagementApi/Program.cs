@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using DatabasesLib.Contexts;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -13,6 +14,10 @@ using ProjectManagementApi.Services.Contracts;
 using ProjectManagementApi.Utils.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var logsPath = Path.Combine(AppContext.BaseDirectory, "Logs");
+Directory.CreateDirectory(logsPath);
+
 builder.Logging.AddConsole();
 ConfigurationManager configuration = builder.Configuration;
 
@@ -108,6 +113,32 @@ var app = builder.Build();
 var hasSpaBuild = File.Exists(Path.Combine(app.Environment.WebRootPath ?? string.Empty, "index.html"));
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        var exception = exceptionFeature?.Error;
+        var logger = context.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("GlobalExceptionHandler");
+
+        if (exception != null)
+        {
+            logger.LogError(exception, "Unhandled exception for request {Method} {Path}", context.Request.Method, context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = "Ocurrió un error al procesar la solicitud.",
+            detail = exception?.GetBaseException().Message ?? "Error no identificado.",
+            traceId = context.TraceIdentifier
+        });
+    });
+});
+
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectManagementApi v1"));
 

@@ -6,6 +6,7 @@ using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services;
 using ProjectManagementApi.Services.Contracts;
+using ProjectManagementApi.Utils;
 
 namespace ProjectManagementApi.Controllers
 {
@@ -66,7 +67,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error downloading attachment with id {Id}", id);
-                return BadRequest(new { message = "Ocurrió un error al procesar la solicitud." });
+                return ApiErrorResponse.BadRequest(this, ex, "Ocurrió un error al procesar la solicitud.");
             }
         }
 
@@ -106,7 +107,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting attachment with id {Id}", id);
-                return BadRequest(new { message = "Ocurrió un error al procesar la solicitud." });
+                return ApiErrorResponse.BadRequest(this, ex, "Ocurrió un error al procesar la solicitud.");
             }
         }
     }

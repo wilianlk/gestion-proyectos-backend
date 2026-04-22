@@ -152,7 +152,7 @@ namespace ProjectManagementApi.Controllers
                 {
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error al crear o actualizar los requerimientos para el proyecto {ProjectCode}", dto.ProjectCode);
-                    return BadRequest(new { message = DefaultErrorMessage });
+                    return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
                 }
             }
         }
@@ -218,7 +218,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al crear o actualizar las integraciones para el proyecto {ProjectCode}", dto.ProjectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -287,7 +287,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al crear o actualizar los actores RACI para el proyecto {ProjectCode}", dto.ProjectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -358,7 +358,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al crear o actualizar los riesgos para el proyecto {ProjectCode}", dto.ProjectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -425,7 +425,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al crear o actualizar los casos de prueba para el proyecto {ProjectCode}", dto.ProjectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 

@@ -75,7 +75,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creando el documento de proyecto");
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -106,7 +106,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error obteniendo el documento de proyecto con código {ProjectCode}", projectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -129,7 +129,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error obteniendo la lista de documentos de proyecto");
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -208,7 +208,7 @@ namespace ProjectManagementApi.Controllers
                     // Rollback transaction on any error
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error actualizando la sección de arquitectura para el documento de proyecto {ProjectCode}", projectCode);
-                    return BadRequest(new { message = DefaultErrorMessage });
+                    return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
                 }
             }
         }
@@ -251,7 +251,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error actualizando la sección general para el documento de proyecto {ProjectCode}", projectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -331,7 +331,7 @@ namespace ProjectManagementApi.Controllers
                     // Rollback transaction on any error
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error actualizando la sección UX para el documento de proyecto {ProjectCode}. Transacción revertida.", projectCode);
-                    return BadRequest(new { message = DefaultErrorMessage });
+                    return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
                 }
             }
         }
@@ -374,7 +374,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error actualizando la sección de restricciones para el documento de proyecto {ProjectCode}", projectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -416,7 +416,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error actualizando la sección de áreas e integraciones para el documento de proyecto {ProjectCode}", projectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 
@@ -458,7 +458,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error actualizando la sección RACI para el documento de proyecto {ProjectCode}", projectCode);
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
 

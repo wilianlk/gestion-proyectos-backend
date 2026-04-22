@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
+using ProjectManagementApi.Utils;
 
 namespace ProjectManagementApi.Controllers
 {
@@ -44,7 +45,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error obteniendo la lista de áreas");
-                return BadRequest(new { message = DefaultErrorMessage });
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
     }

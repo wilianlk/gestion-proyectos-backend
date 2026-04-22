@@ -5,6 +5,7 @@ using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services.Contracts;
+using ProjectManagementApi.Utils;
 
 namespace ProjectManagementApi.Controllers
 {
@@ -63,7 +64,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en el proceso de login");
-                return BadRequest(new { message = "Ocurrió un error al procesar la solicitud." });
+                return ApiErrorResponse.BadRequest(this, ex, "Ocurrió un error al procesar la solicitud.");
             }
         }
     }
