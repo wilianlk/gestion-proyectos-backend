@@ -1,9 +1,7 @@
 using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 using ProjectManagementApi.Models;
-using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services.Contracts;
 
 namespace ProjectManagementApi.Services
@@ -13,48 +11,58 @@ namespace ProjectManagementApi.Services
     /// </summary>
     public class TokenUserService : ITokenUserService
     {
-        private readonly IUserRepository _userRepository;
-
-        public TokenUserService(IUserRepository userRepository)
-        {
-            _userRepository = userRepository;
-        }
-        
         /// <summary>
         /// Description: Extract user information from JWT claims
         /// Input Parameters: 
         ///     * claimsPrincipal (ClaimsPrincipal): JWT claims from the request
         /// Output Parameters: User object with basic information (Id, Username, Name, LastName, RoleId, Role)
         /// </summary>
-        public async Task<User?> GetCurrentUser(ClaimsPrincipal claimsPrincipal)
+        public Task<User?> GetCurrentUser(ClaimsPrincipal claimsPrincipal)
         {
             if (claimsPrincipal == null)
-                return null;
+                return Task.FromResult<User?>(null);
 
             // Find the serialized user data claim
             var userClaim = claimsPrincipal.FindFirst("user");
             if (userClaim == null)
-                return null;
+                return Task.FromResult<User?>(null);
 
             try
             {
                 // Deserialize the user data from the claim
                 var userData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(userClaim.Value);
                 if (userData == null)
-                    return null;
+                    return Task.FromResult<User?>(null);
 
-                // Extract user from DB
-                var username = userData["Username"].GetString();
-                if (string.IsNullOrEmpty(username))
-                    return null;
+                var roleElement = userData["Role"];
+                var role = new Role
+                {
+                    Id = roleElement.TryGetProperty("Id", out var roleId) ? roleId.GetInt32() : 0,
+                    Name = roleElement.TryGetProperty("Name", out var roleName) ? roleName.GetString() ?? string.Empty : string.Empty,
+                    Description = roleElement.TryGetProperty("Description", out var roleDescription) ? roleDescription.GetString() : null
+                };
 
-                // Retornar usuario completo desde la base de datos (incluye Role)
-                return await _userRepository.GetByUsernameAsync(username);
+                var user = new User
+                {
+                    Id = userData.TryGetValue("UserId", out var userId) ? userId.GetInt32() : 0,
+                    Username = userData.TryGetValue("Username", out var username) ? username.GetString() ?? string.Empty : string.Empty,
+                    Email = userData.TryGetValue("Email", out var email) ? email.GetString() ?? string.Empty : string.Empty,
+                    Identification = userData.TryGetValue("Identification", out var identification) ? identification.GetString() ?? string.Empty : string.Empty,
+                    Name = userData.TryGetValue("Name", out var name) ? name.GetString() ?? string.Empty : string.Empty,
+                    LastName = userData.TryGetValue("LastName", out var lastName) ? lastName.GetString() ?? string.Empty : string.Empty,
+                    IsActive = userData.TryGetValue("IsActive", out var isActive) && isActive.ValueKind is JsonValueKind.True or JsonValueKind.False
+                        ? isActive.GetBoolean()
+                        : true,
+                    Role = role,
+                    RoleId = role.Id
+                };
+
+                return Task.FromResult<User?>(user);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error deserializing user from token: {ex.Message}");
-                return null;
+                return Task.FromResult<User?>(null);
             }
         }
     }

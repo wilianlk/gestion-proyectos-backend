@@ -43,6 +43,7 @@ namespace ProjectManagementApi.Services
                 {"UserId", user.Id},
                 {"Username", user.Username},
                 {"Email", user.Email},
+                {"Identification", user.Identification},
                 {"IsActive", user.IsActive},
                 {"LastName", user.LastName},
                 {"Name", user.Name},

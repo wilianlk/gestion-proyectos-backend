@@ -16,6 +16,13 @@ namespace ProjectManagementApi.Repositories
         public Task<User?> GetByUsernameAsync(string username);
 
         /// <summary>
+        /// Get user by identification including role information
+        /// </summary>
+        /// <param name="identification">Identification to search</param>
+        /// <returns>User object with Role if found</returns>
+        Task<User?> GetByIdentificationAsync(string identification);
+
+        /// <summary>
         /// Get all users including role information
         /// </summary>
         /// <returns>List of all users with their Role</returns>

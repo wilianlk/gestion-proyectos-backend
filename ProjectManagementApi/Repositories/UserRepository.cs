@@ -31,6 +31,18 @@ namespace ProjectManagementApi.Repositories
         }
 
         /// <summary>
+        /// Get user by identification including role information
+        /// </summary>
+        /// <param name="identification">Identification to search</param>
+        /// <returns>User object with Role if found, null otherwise</returns>
+        public async Task<User?> GetByIdentificationAsync(string identification)
+        {
+            return await _context.Users
+                .Include(x => x.Role)
+                .FirstOrDefaultAsync(x => x.Identification != null && x.Identification.Trim() == identification);
+        }
+
+        /// <summary>
         /// Get all users including role information
         /// </summary>
         /// <returns>List of all users with their associated Role</returns>

@@ -68,6 +68,7 @@ builder.Services.AddScoped<IProjectDocumentTestCaseRepository<ProjectDocumentTes
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ISsoAuthService, SsoAuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ITokenUserService, TokenUserService>();
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();

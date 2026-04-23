@@ -18,15 +18,18 @@ namespace ProjectManagementApi.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly ITokenService _tokenService;
+        private readonly ISsoAuthService _ssoAuthService;
         private readonly ILogger<SecurityController> _logger;
 
         public SecurityController(
             IUserRepository userRepository,
             ITokenService tokenService,
+            ISsoAuthService ssoAuthService,
             ILogger<SecurityController> logger)
         {
             _userRepository = userRepository;
             _tokenService = tokenService;
+            _ssoAuthService = ssoAuthService;
             _logger = logger;
         }
 
@@ -43,6 +46,27 @@ namespace ProjectManagementApi.Controllers
         {
             try
             {
+                if (!string.IsNullOrWhiteSpace(dto.Code))
+                {
+                    var ssoUser = await _ssoAuthService.ResolveUserByCodeAsync(dto.Code);
+                    if (ssoUser == null)
+                    {
+                        return Unauthorized(new { message = "Invalid or expired code" });
+                    }
+
+                    var ssoToken = _tokenService.GenerateToken(ssoUser);
+                    return Ok(new TokenResponseDto
+                    {
+                        Token = ssoToken,
+                        ExpiresAt = DateTime.UtcNow.AddHours(24)
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                {
+                    return BadRequest(new { message = "Username and password are required" });
+                }
+
                 var user = await _userRepository.GetByUsernameAsync(dto.Username);
                 if (user == null)
                 {

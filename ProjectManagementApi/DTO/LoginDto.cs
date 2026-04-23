@@ -1,13 +1,11 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace ProjectManagementApi.DTO
 {
     public class LoginDto
     {
-        [Required]
-        public string Username { get; set; } = null!;
+        public string? Username { get; set; }
 
-        [Required]
-        public string Password { get; set; } = null!;
+        public string? Password { get; set; }
+
+        public string? Code { get; set; }
     }
 }
