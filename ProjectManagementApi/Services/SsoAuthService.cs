@@ -11,16 +11,13 @@ namespace ProjectManagementApi.Services
     public class SsoAuthService : ISsoAuthService
     {
         private readonly ApplicationContext _context;
-        private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
 
         public SsoAuthService(
             ApplicationContext context,
-            IUserRepository userRepository,
             IRoleRepository roleRepository)
         {
             _context = context;
-            _userRepository = userRepository;
             _roleRepository = roleRepository;
         }
 
@@ -53,22 +50,12 @@ namespace ProjectManagementApi.Services
                     return null;
                 }
 
-                var localUser = await _userRepository.GetByIdentificationAsync(identification);
-                if (localUser != null)
-                {
-                    localUser.Name = string.IsNullOrWhiteSpace(localUser.Name) ? authUser.Name : localUser.Name;
-                    localUser.LastName = string.IsNullOrWhiteSpace(localUser.LastName) ? authUser.LastName : localUser.LastName;
-                    localUser.Email = string.IsNullOrWhiteSpace(localUser.Email) ? authUser.Email : localUser.Email;
-                    localUser.Identification = identification;
-                    return localUser;
-                }
-
-                var role = await _roleRepository.GetByNameAsync("Viewer")
+                var role = await _roleRepository.GetByNameAsync("Admin")
                     ?? new Role
                     {
-                        Id = 0,
-                        Name = "Viewer",
-                        Description = "Viewer"
+                        Id = 1,
+                        Name = "Admin",
+                        Description = "Administrator"
                     };
 
                 authUser.Id = 0;
