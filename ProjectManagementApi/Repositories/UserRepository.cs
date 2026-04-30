@@ -26,6 +26,7 @@ namespace ProjectManagementApi.Repositories
         public async Task<User?> GetByUsernameAsync(string username)
         {
             return await _context.Users
+                .AsNoTracking()
                 .Include(x => x.Role)
                 .FirstOrDefaultAsync(x => x.Username == username);
         }
@@ -38,6 +39,7 @@ namespace ProjectManagementApi.Repositories
         public async Task<User?> GetByIdentificationAsync(string identification)
         {
             return await _context.Users
+                .AsNoTracking()
                 .Include(x => x.Role)
                 .FirstOrDefaultAsync(x => x.Identification != null && x.Identification.Trim() == identification);
         }
@@ -49,6 +51,7 @@ namespace ProjectManagementApi.Repositories
         public async Task<IEnumerable<User>> GetAllWithRoleAsync()
         {
             return await _context.Users
+                .AsNoTracking()
                 .Include(u => u.Role)
                 .ToListAsync();
         }
@@ -61,6 +64,7 @@ namespace ProjectManagementApi.Repositories
         public async Task<User?> GetByIdWithRoleAsync(int id)
         {
             return await _context.Users
+                .AsNoTracking()
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }

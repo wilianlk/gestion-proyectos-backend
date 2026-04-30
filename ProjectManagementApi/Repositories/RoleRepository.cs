@@ -24,7 +24,9 @@ namespace ProjectManagementApi.Repositories
         /// <returns>Role if found, null otherwise</returns>
         public async Task<Role?> GetByNameAsync(string name)
         {
-            return await _context.Roles.FirstOrDefaultAsync(x => x.Name == name);
+            return await _context.Roles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Name == name);
         }
     }
 }

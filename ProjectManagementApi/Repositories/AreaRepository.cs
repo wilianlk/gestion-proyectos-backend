@@ -25,6 +25,7 @@ namespace ProjectManagementApi.Repositories
         Task<List<Area>> IAreaRepository.GetAllOrderedAsync()
         {
             return _context.Areas
+                .AsNoTracking()
                 .OrderBy(x => x.Name)
                 .ToListAsync();
         }

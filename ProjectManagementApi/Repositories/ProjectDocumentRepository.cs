@@ -27,7 +27,8 @@ namespace ProjectManagementApi.Repositories
         {
             var entity = new ProjectDocument
             {
-                ProjectCode = StringSanitizer.SanitizeForInformix(dto.ProjectCode),
+                // Temporary unique value required because ProjectCode is NOT NULL
+                ProjectCode = $"TMP-{Guid.NewGuid():N}",
                 ProjectName = StringSanitizer.SanitizeForInformix(dto.ProjectName),
                 Sponsor = StringSanitizer.SanitizeForInformix(dto.Sponsor),
                 FunctionalLead = StringSanitizer.SanitizeForInformix(dto.FunctionalLead),
@@ -38,7 +39,6 @@ namespace ProjectManagementApi.Repositories
                 ProjectVision = StringSanitizer.SanitizeForInformix(dto.ProjectVision),
                 GeneralObjective = StringSanitizer.SanitizeForInformix(dto.GeneralObjective),
                 SpecificObjectives = StringSanitizer.SanitizeForInformix(dto.SpecificObjectives),
-                ExpectedValue = StringSanitizer.SanitizeForInformix(dto.ExpectedValue),
                 Scope = StringSanitizer.SanitizeForInformix(dto.Scope),
                 Exclusions = StringSanitizer.SanitizeForInformix(dto.Exclusions),
                 CreatedAt = DateTime.UtcNow,
@@ -49,6 +49,10 @@ namespace ProjectManagementApi.Repositories
             };
 
             _context.ProjectDocuments.Add(entity);
+            await _context.SaveChangesAsync();
+
+            // Generate autoincremental code based on the DB identity
+            entity.ProjectCode = $"PRJ-{entity.Id:D6}";
             await _context.SaveChangesAsync();
 
             return entity;
@@ -63,6 +67,7 @@ namespace ProjectManagementApi.Repositories
         public async Task<ProjectDocument?> GetByProjectCodeAsync(string projectCode)
         {
             return await _context.ProjectDocuments
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
         }
 
@@ -75,6 +80,8 @@ namespace ProjectManagementApi.Repositories
         public async Task<ProjectDocument?> GetByProjectCodeDetailedAsync(string projectCode)
         {
             var result = await _context.ProjectDocuments
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(x => x.Attachments)
                 .Include(x => x.Requirements)
                 .Include(x => x.Integrations)
@@ -118,7 +125,6 @@ namespace ProjectManagementApi.Repositories
                 entity.ProjectVision = StringSanitizer.SanitizeForInformix(dto.ProjectVision);
                 entity.GeneralObjective = StringSanitizer.SanitizeForInformix(dto.GeneralObjective);
                 entity.SpecificObjectives = StringSanitizer.SanitizeForInformix(dto.SpecificObjectives);
-                entity.ExpectedValue = StringSanitizer.SanitizeForInformix(dto.ExpectedValue);
                 entity.Scope = StringSanitizer.SanitizeForInformix(dto.Scope);
                 entity.Exclusions = StringSanitizer.SanitizeForInformix(dto.Exclusions);
                 entity.UpdatedAt = DateTime.UtcNow;
@@ -147,8 +153,10 @@ namespace ProjectManagementApi.Repositories
                 entity.SoftwareStack = StringSanitizer.SanitizeForInformix(dto.SoftwareStack);
                 entity.HardwareArchitecture = StringSanitizer.SanitizeForInformix(dto.HardwareArchitecture);
                 entity.SecurityControl = StringSanitizer.SanitizeForInformix(dto.SecurityControl);
-                entity.ExpectedConcurrentUsers = dto.ExpectedConcurrentUsers ?? 0;
-                entity.SlaResponseTime = StringSanitizer.SanitizeForInformix(dto.SlaResponseTime);
+                entity.ExpectedConcurrentUsers = dto.ExpectedConcurrentUsers;
+                entity.SlaResponseTime = string.IsNullOrWhiteSpace(dto.SlaResponseTime)
+                    ? null
+                    : StringSanitizer.SanitizeForInformix(dto.SlaResponseTime);
                 entity.UpdatedAt = DateTime.UtcNow;
                 entity.Identification = user.Identification;
                 entity.Username = user.Username;
@@ -193,7 +201,9 @@ namespace ProjectManagementApi.Repositories
             var entity = await _context.ProjectDocuments.FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
             if (entity != null)
             {
-                entity.EstimatedBudget = StringSanitizer.SanitizeForInformix(dto.EstimatedBudget);
+                entity.EstimatedBudget = string.IsNullOrWhiteSpace(dto.EstimatedBudget)
+                    ? null
+                    : StringSanitizer.SanitizeForInformix(dto.EstimatedBudget);
                 entity.TargetDate = dto.TargetDate;
                 entity.TechnicalConstraints = StringSanitizer.SanitizeForInformix(dto.TechnicalConstraints);
                 entity.BusinessConstraints = StringSanitizer.SanitizeForInformix(dto.BusinessConstraints);
@@ -260,8 +270,18 @@ namespace ProjectManagementApi.Repositories
         public async Task<List<ProjectDocument>> GetAllOrderedAsync()
         {
             return await _context.ProjectDocuments
-                .Include(x => x.Attachments)
+                .AsNoTracking()
                 .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new ProjectDocument
+                {
+                    Id = x.Id,
+                    ProjectCode = x.ProjectCode,
+                    ProjectName = x.ProjectName,
+                    Sponsor = x.Sponsor,
+                    TechnicalLead = x.TechnicalLead,
+                    DocumentStatus = x.DocumentStatus,
+                    CreatedAt = x.CreatedAt
+                })
                 .ToListAsync();
         }
     }
