@@ -2,7 +2,6 @@ namespace ProjectManagementApi.DTO
 {
     public class CreateProjectDocumentDto
     {
-        public string ProjectCode { get; set; } = null!;
         public string ProjectName { get; set; } = null!;
         public string Sponsor { get; set; } = null!;
         public string FunctionalLead { get; set; } = null!;
@@ -13,7 +12,6 @@ namespace ProjectManagementApi.DTO
         public string? ProjectVision { get; set; }
         public string? GeneralObjective { get; set; }
         public string? SpecificObjectives { get; set; }
-        public string? ExpectedValue { get; set; }
         public string? Scope { get; set; }
         public string? Exclusions { get; set; }
     }

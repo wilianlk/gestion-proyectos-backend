@@ -81,14 +81,45 @@ namespace ProjectManagementApi.Repositories
         {
             var result = await _context.ProjectDocuments
                 .AsNoTracking()
-                .AsSplitQuery()
-                .Include(x => x.Attachments)
-                .Include(x => x.Requirements)
-                .Include(x => x.Integrations)
-                .Include(x => x.RaciActors)
-                .Include(x => x.Risks)
-                .Include(x => x.TestCases)
                 .FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            var projectId = result.Id;
+
+            result.Attachments = await _context.Attachments
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == projectId)
+                .ToListAsync();
+
+            result.Requirements = await _context.ProjectDocumentRequirements
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == projectId)
+                .ToListAsync();
+
+            result.Integrations = await _context.ProjectDocumentIntegrations
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == projectId)
+                .ToListAsync();
+
+            result.RaciActors = await _context.ProjectDocumentRaciActors
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == projectId)
+                .ToListAsync();
+
+            result.Risks = await _context.ProjectDocumentRisks
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == projectId)
+                .ToListAsync();
+
+            result.TestCases = await _context.ProjectDocumentTestCases
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == projectId)
+                .ToListAsync();
+
             return result;
         }
 
@@ -280,7 +311,10 @@ namespace ProjectManagementApi.Repositories
                     Sponsor = x.Sponsor,
                     TechnicalLead = x.TechnicalLead,
                     DocumentStatus = x.DocumentStatus,
-                    CreatedAt = x.CreatedAt
+                    CreatedAt = x.CreatedAt,
+                    Identification = x.Identification,
+                    Username = x.Username,
+                    CreatedBy = x.CreatedBy
                 })
                 .ToListAsync();
         }

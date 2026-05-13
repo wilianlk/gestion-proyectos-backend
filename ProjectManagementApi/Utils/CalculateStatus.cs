@@ -4,6 +4,26 @@ namespace ProjectManagementApi.Utils
 {
     public static class CalculateStatus
     {
+        private static bool HasMeaningfulText(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var normalized = value
+                .Replace("&nbsp;", " ", StringComparison.OrdinalIgnoreCase)
+                .Replace("<br>", " ", StringComparison.OrdinalIgnoreCase)
+                .Replace("<br/>", " ", StringComparison.OrdinalIgnoreCase)
+                .Replace("<br />", " ", StringComparison.OrdinalIgnoreCase);
+
+            var plainText = System.Text.RegularExpressions.Regex
+                .Replace(normalized, "<[^>]*>", " ")
+                .Trim();
+
+            return !string.IsNullOrWhiteSpace(plainText);
+        }
+
         /// <summary>
         /// Description: Calculate the completion status of the General section
         /// Input Parameters: 
@@ -12,7 +32,7 @@ namespace ProjectManagementApi.Utils
         /// </summary>
         public static string CalculateGeneralSectionStatus(ProjectDocument project)
         {
-            int totalFields = 11;
+            int totalFields = 10;
             int filledFields = 0;
 
             if (!string.IsNullOrEmpty(project.ProjectName)) filledFields++;
@@ -23,7 +43,6 @@ namespace ProjectManagementApi.Utils
             if (!string.IsNullOrEmpty(project.ProjectVision)) filledFields++;
             if (!string.IsNullOrEmpty(project.GeneralObjective)) filledFields++;
             if (!string.IsNullOrEmpty(project.SpecificObjectives)) filledFields++;
-            if (!string.IsNullOrEmpty(project.ExpectedValue)) filledFields++;
             if (!string.IsNullOrEmpty(project.Scope)) filledFields++;
             if (!string.IsNullOrEmpty(project.Exclusions)) filledFields++;
 
@@ -40,20 +59,19 @@ namespace ProjectManagementApi.Utils
         /// </summary>
         public static string CalculateArchitectureSectionStatus(ProjectDocument project)
         {
-            int totalFields = 9;
+            int totalFields = 4;
             int filledFields = 0;
 
-            if (!string.IsNullOrEmpty(project.SolutionDescription)) filledFields++;
-            if (!string.IsNullOrEmpty(project.SolutionType)) filledFields++;
-            if (!string.IsNullOrEmpty(project.DeploymentModel)) filledFields++;
-            if (!string.IsNullOrEmpty(project.SoftwareStack)) filledFields++;
-            if (!string.IsNullOrEmpty(project.HardwareArchitecture)) filledFields++;
-            if (!string.IsNullOrEmpty(project.SecurityControl)) filledFields++;
-            if (project.ExpectedConcurrentUsers.HasValue) filledFields++;
-            if (!string.IsNullOrEmpty(project.SlaResponseTime)) filledFields++;
+            if (!string.IsNullOrWhiteSpace(project.SolutionDescription)) filledFields++;
+            if (!string.IsNullOrWhiteSpace(project.SoftwareStack)) filledFields++;
+            if (!string.IsNullOrWhiteSpace(project.SecurityControl)) filledFields++;
 
-            bool hasAttachments = project.Attachments?.Any(a => a.Section == "Architecture") ?? false;
-            if (hasAttachments) filledFields++;
+            bool hasHardwareDescription = !string.IsNullOrWhiteSpace(project.HardwareArchitecture);
+            bool hasArchitectureAttachment = project.Attachments?.Any(a =>
+                !string.IsNullOrWhiteSpace(a.Section) &&
+                string.Equals(a.Section.Trim(), "Architecture", StringComparison.OrdinalIgnoreCase)) ?? false;
+
+            if (hasHardwareDescription || hasArchitectureAttachment) filledFields++;
 
             if (filledFields == 0) return "Pendiente";
             if (filledFields >= totalFields) return "Completo";
@@ -68,16 +86,16 @@ namespace ProjectManagementApi.Utils
         /// </summary>
         public static string CalculateUxCasesSectionStatus(ProjectDocument project)
         {
-            int totalFields = 5;
+            int totalFields = 2;
             int filledFields = 0;
 
-            if (!string.IsNullOrEmpty(project.UseCases)) filledFields++;
-            if (!string.IsNullOrEmpty(project.RequiredDiagrams)) filledFields++;
-            if (!string.IsNullOrEmpty(project.ExperienceDesignMockups)) filledFields++;
-            if (!string.IsNullOrEmpty(project.TargetUsers)) filledFields++;
+            bool hasUseCasesAttachment = project.Attachments?.Any(a =>
+                a.Section == "UxCasesUseCases" || a.Section == "UxCases") ?? false;
+            if (hasUseCasesAttachment) filledFields++;
 
-            bool hasAttachments = project.Attachments?.Any(a => a.Section == "UxCases") ?? false;
-            if (hasAttachments) filledFields++;
+            bool hasUxAttachment = project.Attachments?.Any(a =>
+                a.Section == "UxCasesExperienceDesignMockups" || a.Section == "UxCases") ?? false;
+            if (hasUxAttachment) filledFields++;
 
             if (filledFields == 0) return "Pendiente";
             if (filledFields >= totalFields) return "Completo";
@@ -92,17 +110,23 @@ namespace ProjectManagementApi.Utils
         /// </summary>
         public static string CalculateConstraintsSectionStatus(ProjectDocument project)
         {
-            int totalFields = 5;
-            int filledFields = 0;
+            int requiredFields = 3;
+            int filledRequiredFields = 0;
 
-            if (!string.IsNullOrEmpty(project.EstimatedBudget)) filledFields++;
-            if (project.TargetDate.HasValue) filledFields++;
-            if (!string.IsNullOrEmpty(project.TechnicalConstraints)) filledFields++;
-            if (!string.IsNullOrEmpty(project.BusinessConstraints)) filledFields++;
-            if (!string.IsNullOrEmpty(project.RegulationsCompliance)) filledFields++;
+            bool hasEstimatedBudget = HasMeaningfulText(project.EstimatedBudget);
+            bool hasTargetDate = project.TargetDate.HasValue;
+            bool hasTechnicalConstraints = HasMeaningfulText(project.TechnicalConstraints);
+            bool hasBusinessConstraints = HasMeaningfulText(project.BusinessConstraints);
+            bool hasRegulationsCompliance = HasMeaningfulText(project.RegulationsCompliance);
 
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields == totalFields) return "Completo";
+            if (hasTechnicalConstraints) filledRequiredFields++;
+            if (hasBusinessConstraints) filledRequiredFields++;
+            if (hasRegulationsCompliance) filledRequiredFields++;
+
+            bool hasOptionalData = hasEstimatedBudget || hasTargetDate;
+
+            if (filledRequiredFields == 0 && !hasOptionalData) return "Pendiente";
+            if (filledRequiredFields == requiredFields) return "Completo";
             return "Incompleto";
         }
 
@@ -134,15 +158,54 @@ namespace ProjectManagementApi.Utils
         /// </summary>
         public static string CalculateRaciSectionStatus(ProjectDocument project)
         {
-            int totalFields = 3;
-            int filledFields = 0;
+            var hasCompleteRaciActor = project.RaciActors?.Any(actor =>
+                !string.IsNullOrWhiteSpace(actor.Activity) &&
+                !string.IsNullOrWhiteSpace(actor.Type) &&
+                !string.IsNullOrWhiteSpace(actor.Area) &&
+                !string.IsNullOrWhiteSpace(actor.Role)
+            ) ?? false;
 
-            if (!string.IsNullOrEmpty(project.ResponsibilitiesSummary)) filledFields++;
-            if (!string.IsNullOrEmpty(project.ChangeManagementAdoption)) filledFields++;
-            if (!string.IsNullOrEmpty(project.OperationSupport)) filledFields++;
+            if (!hasCompleteRaciActor) return "Pendiente";
+            return "Completo";
+        }
 
-            if (filledFields == 0) return "Pendiente";
-            if (filledFields == totalFields) return "Completo";
+        public static string CalculateRequirementsSectionStatus(ProjectDocument project)
+        {
+            var requirements = project.Requirements ?? Enumerable.Empty<ProjectDocumentRequirement>();
+
+            var hasAnyRequirementData = requirements.Any(r =>
+                !string.IsNullOrWhiteSpace(r.Code) ||
+                !string.IsNullOrWhiteSpace(r.Description) ||
+                !string.IsNullOrWhiteSpace(r.Type) ||
+                !string.IsNullOrWhiteSpace(r.Priority) ||
+                !string.IsNullOrWhiteSpace(r.AcceptanceCriteria));
+
+            var hasCompleteRequirement = requirements.Any(r =>
+                !string.IsNullOrWhiteSpace(r.Code) &&
+                !string.IsNullOrWhiteSpace(r.Description) &&
+                !string.IsNullOrWhiteSpace(r.Type) &&
+                !string.IsNullOrWhiteSpace(r.Priority) &&
+                !string.IsNullOrWhiteSpace(r.AcceptanceCriteria));
+
+            if (!hasAnyRequirementData) return "Pendiente";
+            if (hasCompleteRequirement) return "Completo";
+            return "Incompleto";
+        }
+
+        public static string CalculateIntegrationsSectionStatus(ProjectDocument project)
+        {
+            var integrations = project.Integrations ?? Enumerable.Empty<ProjectDocumentIntegration>();
+
+            var hasAnyIntegrationData = integrations.Any(i =>
+                !string.IsNullOrWhiteSpace(i.System) ||
+                !string.IsNullOrWhiteSpace(i.Description));
+
+            var hasCompleteIntegration = integrations.Any(i =>
+                !string.IsNullOrWhiteSpace(i.System) &&
+                !string.IsNullOrWhiteSpace(i.Description));
+
+            if (!hasAnyIntegrationData) return "Pendiente";
+            if (hasCompleteIntegration) return "Completo";
             return "Incompleto";
         }
 

@@ -9,9 +9,12 @@ namespace ProjectManagementApi.Models
     {
         [Required]
         [Column("Name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [Column("Description")]
         public string? Description { get; set; }
+
+        [Column("Application")]
+        public string? Application { get; set; }
     }
 }

@@ -24,7 +24,6 @@ namespace ProjectManagementApi.Utils
                 ProjectVision = project.ProjectVision,
                 GeneralObjective = project.GeneralObjective,
                 SpecificObjectives = project.SpecificObjectives,
-                ExpectedValue = project.ExpectedValue,
                 Scope = project.Scope,
                 Exclusions = project.Exclusions,
                 SolutionDescription = project.SolutionDescription,
@@ -63,6 +62,7 @@ namespace ProjectManagementApi.Utils
                     ProjectDocumentId = a.ProjectDocumentId,
                     Section = a.Section,
                     FileName = a.FileName,
+                    ReferenceCode = fileService.TryExtractReferenceCode(a.FilePath),
                     FilePath = fileService.GetFileUrl(a.FilePath),
                     FileSize = a.FileSize,
                     ContentType = a.ContentType,
@@ -121,6 +121,8 @@ namespace ProjectManagementApi.Utils
                 ConstraintsSectionStatus = CalculateStatus.CalculateConstraintsSectionStatus(project),
                 AreasIntegrationsSectionStatus = CalculateStatus.CalculateAreasIntegrationsSectionStatus(project),
                 RaciSectionStatus = CalculateStatus.CalculateRaciSectionStatus(project),
+                RequirementsSectionStatus = CalculateStatus.CalculateRequirementsSectionStatus(project),
+                IntegrationsSectionStatus = CalculateStatus.CalculateIntegrationsSectionStatus(project),
                 RiskSectionStatus = CalculateStatus.CalculateRiskSectionStatus(project),
                 TestCaseSectionStatus = CalculateStatus.CalculateTestCaseSectionStatus(project)
             };

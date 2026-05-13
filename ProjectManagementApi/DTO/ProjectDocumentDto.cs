@@ -14,7 +14,6 @@ namespace ProjectManagementApi.DTO
         public string? ProjectVision { get; set; }
         public string? GeneralObjective { get; set; }
         public string? SpecificObjectives { get; set; }
-        public string? ExpectedValue { get; set; }
         public string? Scope { get; set; }
         public string? Exclusions { get; set; }
         // Arquitectura
@@ -58,6 +57,8 @@ namespace ProjectManagementApi.DTO
         public string? ConstraintsSectionStatus { get; set; }
         public string? AreasIntegrationsSectionStatus { get; set; }
         public string? RaciSectionStatus { get; set; }
+        public string? RequirementsSectionStatus { get; set; }
+        public string? IntegrationsSectionStatus { get; set; }
         public string? RiskSectionStatus { get; set; }
         public string? TestCaseSectionStatus { get; set; }
 

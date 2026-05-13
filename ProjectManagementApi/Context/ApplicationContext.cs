@@ -22,8 +22,9 @@ namespace ProjectManagementApi.Context
         public DbSet<ProjectDocumentRaciActor> ProjectDocumentRaciActors { get; set; }
         public DbSet<ProjectDocumentRisk> ProjectDocumentRisks { get; set; }
         public DbSet<ProjectDocumentTestCase> ProjectDocumentTestCases { get; set; }
-        public DbSet<Role> Roles { get; set; }
-        public DbSet<User> Users { get; set; }
+        public DbSet<SolutionType> SolutionTypes { get; set; }
+        public DbSet<DeploymentModel> DeploymentModels { get; set; }
+        public DbSet<Vicepresidency> Vicepresidencies { get; set; }
         public DbSet<Area> Areas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -70,20 +71,24 @@ namespace ProjectManagementApi.Context
                 entity.HasKey(x => x.Id);
             });
 
-            modelBuilder.Entity<Role>(entity =>
-            {
-                entity.HasKey(x => x.Id);
-            });
-
             modelBuilder.Entity<Area>(entity =>
             {
                 entity.HasKey(x => x.Id);
             });
 
-            modelBuilder.Entity<User>(entity =>
+            modelBuilder.Entity<SolutionType>(entity =>
             {
                 entity.HasKey(x => x.Id);
-                entity.HasOne(x => x.Role).WithMany().HasForeignKey(x => x.RoleId);
+            });
+
+            modelBuilder.Entity<DeploymentModel>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+            });
+
+            modelBuilder.Entity<Vicepresidency>(entity =>
+            {
+                entity.HasKey(x => x.Id);
             });
 
             base.OnModelCreating(modelBuilder);

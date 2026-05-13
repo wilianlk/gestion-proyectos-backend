@@ -1,4 +1,3 @@
-using DatabasesLib.Interfaces;
 using ProjectManagementApi.Models;
 
 namespace ProjectManagementApi.Repositories
@@ -6,13 +5,10 @@ namespace ProjectManagementApi.Repositories
     /// <summary>
     /// Interfaz para el repositorio de roles
     /// </summary>
-public interface IRoleRepository : IRepository<Role>
-{
-        /// <summary>
-        /// Get role by name
-        /// </summary>
-        /// <param name="name">Role name</param>
-        /// <returns>Role if found</returns>
+    public interface IRoleRepository
+    {
+        Task<IEnumerable<Role>> GetAllAsync();
+        Task<Role?> GetByIdAsync(int id);
         Task<Role?> GetByNameAsync(string name);
-}
+    }
 }

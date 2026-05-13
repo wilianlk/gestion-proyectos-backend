@@ -50,11 +50,7 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = $"Attachment with id '{id}' not found" });
                 }
 
-                var fullPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot",
-                    attachment.FilePath
-                );
+                var fullPath = _fileService.GetAbsoluteFilePath(attachment.FilePath);
 
                 if (!System.IO.File.Exists(fullPath))
                 {
@@ -89,16 +85,7 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = $"Attachment with id '{id}' not found" });
                 }
 
-                var fullPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot",
-                    attachment.FilePath
-                );
-
-                if (System.IO.File.Exists(fullPath))
-                {
-                    System.IO.File.Delete(fullPath);
-                }
+                await _fileService.DeleteFileAsync(attachment.FilePath);
 
                 await _attachmentRepository.DeleteAttachmentAsync(id);
 

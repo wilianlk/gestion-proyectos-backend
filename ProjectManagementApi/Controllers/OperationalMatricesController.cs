@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using ProjectManagementApi.Context;
 using ProjectManagementApi.DTO;
@@ -11,6 +12,7 @@ namespace ProjectManagementApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OperationalMatricesController : ControllerBase
     {
         private readonly IProjectDocumentRepository<ProjectDocument> _projectDocumentRepository;
@@ -103,6 +105,7 @@ namespace ProjectManagementApi.Controllers
                         AcceptanceCriteria = StringSanitizer.SanitizeForInformix(r.AcceptanceCriteria),
                         CreatedAt = DateTime.UtcNow,
                         IsActive = true,
+                        CreatedBy = currentUser.Username,
                         Identification = currentUser.Identification,
                         Username = currentUser.Username
                     }).ToList();
@@ -114,7 +117,7 @@ namespace ProjectManagementApi.Controllers
                     {
                         foreach (var file in files)
                         {
-                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "Requirements");
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "Requirements", project.ProjectCode);
                             
                             await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
                             {
@@ -171,9 +174,28 @@ namespace ProjectManagementApi.Controllers
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(dto.ProjectCode))
+                {
+                    return BadRequest(new { message = "El codigo del proyecto es requerido" });
+                }
+
                 if (dto.Integrations == null || dto.Integrations.Count == 0)
                 {
                     return BadRequest(new { message = "No se proporcionaron integraciones" });
+                }
+
+                var validIntegrations = dto.Integrations
+                    .Where(i => !string.IsNullOrWhiteSpace(i.System) && !string.IsNullOrWhiteSpace(i.Description))
+                    .Select(i => new IntegrationItemDto
+                    {
+                        System = i.System?.Trim(),
+                        Description = i.Description?.Trim()
+                    })
+                    .ToList();
+
+                if (validIntegrations.Count == 0)
+                {
+                    return BadRequest(new { message = "Cada integracion debe tener sistema y descripcion" });
                 }
 
                 // Get current user from JWT token
@@ -191,7 +213,7 @@ namespace ProjectManagementApi.Controllers
 
                 await _integrationRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
 
-                var entities = dto.Integrations.Select(i => new ProjectDocumentIntegration
+                var entities = validIntegrations.Select(i => new ProjectDocumentIntegration
                 {
                     ProjectDocumentId = project.Id,
                     System = StringSanitizer.SanitizeForInformix(i.System),

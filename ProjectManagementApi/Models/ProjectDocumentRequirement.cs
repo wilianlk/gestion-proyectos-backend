@@ -16,7 +16,7 @@ namespace ProjectManagementApi.Models
         [Column("Code")]
         public string? Code { get; set; }
 
-        [Column("Description")]
+        [Column("Requirement")]
         public string? Description { get; set; }
 
         [Column("Type")]
@@ -27,6 +27,10 @@ namespace ProjectManagementApi.Models
 
         [Column("AcceptanceCriteria")]
         public string? AcceptanceCriteria { get; set; }
+
+        [Column("CreatedBy")]
+        public string CreatedBy { get; set; }
+
         [Column("Identification")]
         public string Identification { get; set; }
 

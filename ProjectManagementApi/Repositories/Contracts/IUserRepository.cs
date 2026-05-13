@@ -1,4 +1,3 @@
-using DatabasesLib.Interfaces;
 using ProjectManagementApi.Models;
 
 namespace ProjectManagementApi.Repositories
@@ -6,7 +5,7 @@ namespace ProjectManagementApi.Repositories
     /// <summary>
     /// Interfaz para el repositorio de usuarios
     /// </summary>
-    public interface IUserRepository : IRepository<User>
+    public interface IUserRepository
     {
         /// <summary>
         /// Get user by username including role information

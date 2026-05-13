@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ProjectManagementApi.Context;
 using ProjectManagementApi.DTO;
@@ -64,11 +65,6 @@ namespace ProjectManagementApi.Controllers
                     return Unauthorized(new { message = "User information not found in token" });
                 }
 
-                if (await _projectDocumentRepository.ExistsByProjectCodeAsync(dto.ProjectCode))
-                {
-                    return BadRequest(new { message = $"Project code '{dto.ProjectCode}' already exists" });
-                }
-
                 var created = await _projectDocumentRepository.CreateAsync(dto, currentUser);
                 return CreatedAtAction(nameof(GetByProjectCode), new { projectCode = created.ProjectCode }, created);
             }
@@ -122,13 +118,115 @@ namespace ProjectManagementApi.Controllers
         {
             try
             {
+                var currentUser = await _tokenUserService.GetCurrentUser(User);
+                if (currentUser == null)
+                {
+                    return Unauthorized(new { message = "User information not found in token" });
+                }
+
                 var projects = await _projectDocumentRepository.GetAllOrderedAsync();
-                var result = projects.Select(MapToList.MapToListDto).ToList();
+                var isAdmin = string.Equals(currentUser.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase);
+
+                if (!isAdmin)
+                {
+                    projects = projects
+                        .Where(p =>
+                            string.Equals(p.Identification, currentUser.Identification, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(p.Username, currentUser.Username, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(p.CreatedBy, currentUser.Username, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                var result = new List<ProjectDocumentListDto>();
+
+                foreach (var project in projects)
+                {
+                    var dto = MapToList.MapToListDto(project);
+                    var isMarkedAsComplete = string.Equals(project.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase);
+                    if (!isMarkedAsComplete)
+                    {
+                        result.Add(dto);
+                        continue;
+                    }
+
+                    var detailedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(project.ProjectCode);
+                    if (detailedProject == null)
+                    {
+                        result.Add(dto);
+                        continue;
+                    }
+
+                    var hasIncompleteSection =
+                        !string.Equals(CalculateStatus.CalculateGeneralSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateArchitectureSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateUxCasesSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateConstraintsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateRaciSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateRequirementsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateIntegrationsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateRiskSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(CalculateStatus.CalculateTestCaseSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase);
+
+                    if (hasIncompleteSection)
+                    {
+                        dto.HasIncompleteDocumentAlert = true;
+                        dto.IncompleteDocumentAlertMessage = "Documento marcado como completo con secciones incompletas.";
+                    }
+
+                    result.Add(dto);
+                }
+
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error obteniendo la lista de documentos de proyecto");
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
+            }
+        }
+
+        /// <summary>
+        /// Method to get global KPI metrics for document management
+        /// </summary>
+        /// <returns>Global KPI summary</returns>
+        [HttpGet("[action]")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<DocumentKpisDto>> GetDocumentKpis()
+        {
+            try
+            {
+                var projects = await _context.ProjectDocuments
+                    .AsNoTracking()
+                    .Select(x => new
+                    {
+                        x.DocumentStatus,
+                        HasIntegrations = x.Integrations.Any()
+                    })
+                    .ToListAsync();
+
+                var totalDocuments = projects.Count;
+                var completedDocuments = projects.Count(p => string.Equals(p.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase));
+                var pendingDocuments = projects.Count(p => string.Equals(p.DocumentStatus, "Pendiente", StringComparison.OrdinalIgnoreCase));
+                var inProgressDocuments = Math.Max(0, totalDocuments - completedDocuments - pendingDocuments);
+                var documentsWithIntegrations = projects.Count(p => p.HasIntegrations);
+
+                var result = new DocumentKpisDto
+                {
+                    TotalDocuments = totalDocuments,
+                    CompletedDocuments = completedDocuments,
+                    InProgressDocuments = inProgressDocuments,
+                    PendingDocuments = pendingDocuments,
+                    CompletionRate = totalDocuments == 0 ? 0 : Math.Round((decimal)completedDocuments * 100 / totalDocuments, 2),
+                    IntegrationsCoverageRate = totalDocuments == 0 ? 0 : Math.Round((decimal)documentsWithIntegrations * 100 / totalDocuments, 2),
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo KPIs documentales");
                 return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }
@@ -154,6 +252,7 @@ namespace ProjectManagementApi.Controllers
             // Initialize transaction context
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
+                var transactionCompleted = false;
                 try
                 {
                     // Get current user from JWT token
@@ -177,7 +276,7 @@ namespace ProjectManagementApi.Controllers
                     {
                         foreach (var file in files)
                         {
-                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture");
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "Architecture", project.ProjectCode);
                             
                             await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
                             {
@@ -193,6 +292,7 @@ namespace ProjectManagementApi.Controllers
 
                     // Commit transaction if all operations succeed
                     await transaction.CommitAsync();
+                    transactionCompleted = true;
 
                     var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                     return Ok(MapToObject.MapToDto(updatedProject, _fileService));
@@ -200,13 +300,19 @@ namespace ProjectManagementApi.Controllers
                 catch (InvalidOperationException ex) // Captura de excepción de FileService
                 {
                     // Rollback transaction on any error
-                    await transaction.RollbackAsync();
+                    if (!transactionCompleted)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     return BadRequest(new { message = ex.Message }); // Retorna el mensaje de validación personalizado
                 }
                 catch (Exception ex)
                 {
                     // Rollback transaction on any error
-                    await transaction.RollbackAsync();
+                    if (!transactionCompleted)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     _logger.LogError(ex, "Error actualizando la sección de arquitectura para el documento de proyecto {ProjectCode}", projectCode);
                     return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
                 }
@@ -271,11 +377,14 @@ namespace ProjectManagementApi.Controllers
         public async Task<ActionResult<ProjectDocumentDto>> UpdateUxCasesSection(
             string projectCode, 
             [FromForm] UpdateUxCasesSectionDto dto,
+            [FromForm] IFormFileCollection? useCasesFiles,
+            [FromForm] IFormFileCollection? experienceDesignMockupsFiles,
             [FromForm] IFormFileCollection? files)
         {
             // Initialize transaction context
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
+                var transactionCompleted = false;
                 try
                 {
                     // Get current user from JWT token
@@ -295,13 +404,51 @@ namespace ProjectManagementApi.Controllers
                     // Update UX Cases section
                     await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto, currentUser);
 
-                    // Process and upload attachments
+                    // Process and upload use cases attachments
+                    if (useCasesFiles != null && useCasesFiles.Count > 0)
+                    {
+                        foreach (var file in useCasesFiles)
+                        {
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCasesUseCases", project.ProjectCode);
+
+                            await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
+                            {
+                                ProjectDocumentId = project.Id,
+                                Section = "UxCasesUseCases",
+                                FileName = file.FileName,
+                                FilePath = filePath,
+                                FileSize = file.Length,
+                                ContentType = file.ContentType
+                            });
+                        }
+                    }
+
+                    // Process and upload UX mockups attachments
+                    if (experienceDesignMockupsFiles != null && experienceDesignMockupsFiles.Count > 0)
+                    {
+                        foreach (var file in experienceDesignMockupsFiles)
+                        {
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCasesExperienceDesignMockups", project.ProjectCode);
+
+                            await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
+                            {
+                                ProjectDocumentId = project.Id,
+                                Section = "UxCasesExperienceDesignMockups",
+                                FileName = file.FileName,
+                                FilePath = filePath,
+                                FileSize = file.Length,
+                                ContentType = file.ContentType
+                            });
+                        }
+                    }
+
+                    // Legacy support: "files" fallback
                     if (files != null && files.Count > 0)
                     {
                         foreach (var file in files)
                         {
-                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases");
-                            
+                            var filePath = await _fileService.UploadFileAsync(file, project.Id, "UxCases", project.ProjectCode);
+
                             await _attachmentRepository.CreateAttachmentAsync(new AttachmentDto
                             {
                                 ProjectDocumentId = project.Id,
@@ -316,6 +463,7 @@ namespace ProjectManagementApi.Controllers
 
                     // Commit transaction if all operations succeed
                     await transaction.CommitAsync();
+                    transactionCompleted = true;
 
                     var updatedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(projectCode);
                     return Ok(MapToObject.MapToDto(updatedProject, _fileService));
@@ -323,13 +471,19 @@ namespace ProjectManagementApi.Controllers
                 catch (InvalidOperationException ex) // Captura de excepción de FileService
                 {
                     // Rollback transaction on any error
-                    await transaction.RollbackAsync();
+                    if (!transactionCompleted)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     return BadRequest(new { message = ex.Message }); // Retorna el mensaje de validación personalizado
                 }
                 catch (Exception ex)
                 {
                     // Rollback transaction on any error
-                    await transaction.RollbackAsync();
+                    if (!transactionCompleted)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     _logger.LogError(ex, "Error actualizando la sección UX para el documento de proyecto {ProjectCode}. Transacción revertida.", projectCode);
                     return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
                 }

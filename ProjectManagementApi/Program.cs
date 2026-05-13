@@ -65,6 +65,9 @@ builder.Services.AddScoped<IProjectDocumentIntegrationRepository<ProjectDocument
 builder.Services.AddScoped<IProjectDocumentRaciActorRepository<ProjectDocumentRaciActor>, ProjectDocumentRaciActorRepository>();
 builder.Services.AddScoped<IProjectDocumentRiskRepository<ProjectDocumentRisk>, ProjectDocumentRiskRepository>();
 builder.Services.AddScoped<IProjectDocumentTestCaseRepository<ProjectDocumentTestCase>, ProjectDocumentTestCaseRepository>();
+builder.Services.AddScoped<ISolutionTypeRepository, SolutionTypeRepository>();
+builder.Services.AddScoped<IDeploymentModelRepository, DeploymentModelRepository>();
+builder.Services.AddScoped<IVicepresidencyRepository, VicepresidencyRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IAreaRepository, AreaRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();

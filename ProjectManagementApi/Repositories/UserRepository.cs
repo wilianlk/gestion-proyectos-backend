@@ -1,72 +1,224 @@
-using DatabasesLib;
+using System.Data;
+using Microsoft.EntityFrameworkCore;
 using ProjectManagementApi.Context;
 using ProjectManagementApi.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace ProjectManagementApi.Repositories
 {
-    /// <summary>
-    /// Repositorio para la gestión de usuarios en la base de datos
-    /// </summary>
-    public class UserRepository : InformixBaseRepository<User>, IUserRepository
+    public class UserRepository : IUserRepository
     {
         private readonly ApplicationContext _context;
 
-        public UserRepository(ApplicationContext context) : base(context)
+        public UserRepository(ApplicationContext context)
         {
             _context = context;
         }
 
-        /// <summary>
-        /// Description: Get user by username including role information
-        /// Input Parameters: 
-        ///     * username (string): Username to search
-        /// Output Parameters: User object with Role if found, null otherwise
-        /// </summary>
         public async Task<User?> GetByUsernameAsync(string username)
         {
-            return await _context.Users
-                .AsNoTracking()
-                .Include(x => x.Role)
-                .FirstOrDefaultAsync(x => x.Username == username);
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return null;
+            }
+
+            const string sql = @"
+                SELECT FIRST 1
+                    sa.id,
+                    TRIM(sa.solicitante_identificacion) AS identificacion,
+                    TRIM(sa.solicitante_nombre) AS nombre,
+                    TRIM(sa.solicitante_email) AS correo,
+                    (SELECT FIRST 1 r.id
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_id,
+                    (SELECT FIRST 1 TRIM(r.nombre)
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_name
+                FROM solicitudes_aprobaciones sa
+                WHERE sa.id = (
+                        SELECT MAX(sa2.id)
+                        FROM solicitudes_aprobaciones sa2
+                        WHERE TRIM(sa2.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                    )
+                  AND (
+                        UPPER(TRIM(sa.solicitante_identificacion)) = UPPER(@username)
+                        OR UPPER(TRIM(sa.solicitante_email)) = UPPER(@username)
+                    )";
+
+            return await QuerySingleUserAsync(sql, ("@username", username.Trim()));
         }
 
-        /// <summary>
-        /// Get user by identification including role information
-        /// </summary>
-        /// <param name="identification">Identification to search</param>
-        /// <returns>User object with Role if found, null otherwise</returns>
         public async Task<User?> GetByIdentificationAsync(string identification)
         {
-            return await _context.Users
-                .AsNoTracking()
-                .Include(x => x.Role)
-                .FirstOrDefaultAsync(x => x.Identification != null && x.Identification.Trim() == identification);
+            if (string.IsNullOrWhiteSpace(identification))
+            {
+                return null;
+            }
+
+            const string sql = @"
+                SELECT FIRST 1
+                    sa.id,
+                    TRIM(sa.solicitante_identificacion) AS identificacion,
+                    TRIM(sa.solicitante_nombre) AS nombre,
+                    TRIM(sa.solicitante_email) AS correo,
+                    (SELECT FIRST 1 r.id
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_id,
+                    (SELECT FIRST 1 TRIM(r.nombre)
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_name
+                FROM solicitudes_aprobaciones sa
+                WHERE TRIM(sa.solicitante_identificacion) = @identification
+                ORDER BY sa.id DESC";
+
+            return await QuerySingleUserAsync(sql, ("@identification", identification.Trim()));
         }
 
-        /// <summary>
-        /// Get all users including role information
-        /// </summary>
-        /// <returns>List of all users with their associated Role</returns>
         public async Task<IEnumerable<User>> GetAllWithRoleAsync()
         {
-            return await _context.Users
-                .AsNoTracking()
-                .Include(u => u.Role)
-                .ToListAsync();
+            const string sql = @"
+                SELECT
+                    sa.id,
+                    TRIM(sa.solicitante_identificacion) AS identificacion,
+                    TRIM(sa.solicitante_nombre) AS nombre,
+                    TRIM(sa.solicitante_email) AS correo,
+                    (SELECT FIRST 1 r.id
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_id,
+                    (SELECT FIRST 1 TRIM(r.nombre)
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_name
+                FROM solicitudes_aprobaciones sa
+                WHERE sa.id = (
+                    SELECT MAX(sa2.id)
+                    FROM solicitudes_aprobaciones sa2
+                    WHERE TRIM(sa2.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                )
+                ORDER BY sa.id DESC";
+
+            return await QueryUsersAsync(sql);
         }
 
-        /// <summary>
-        /// Get user by id including role information
-        /// </summary>
-        /// <param name="id">Unique identifier of the user to search</param>
-        /// <returns>User object with its associated Role if found, otherwise null</returns>
         public async Task<User?> GetByIdWithRoleAsync(int id)
         {
-            return await _context.Users
-                .AsNoTracking()
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Id == id);
+            const string sql = @"
+                SELECT FIRST 1
+                    sa.id,
+                    TRIM(sa.solicitante_identificacion) AS identificacion,
+                    TRIM(sa.solicitante_nombre) AS nombre,
+                    TRIM(sa.solicitante_email) AS correo,
+                    (SELECT FIRST 1 r.id
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_id,
+                    (SELECT FIRST 1 TRIM(r.nombre)
+                     FROM requisiciones_solicitantes_roles sr
+                     JOIN requisiciones_roles r ON r.id = sr.rol_id
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     ORDER BY r.id) AS role_name
+                FROM solicitudes_aprobaciones sa
+                WHERE sa.id = @id";
+
+            return await QuerySingleUserAsync(sql, ("@id", id));
+        }
+
+        private async Task<User?> QuerySingleUserAsync(string sql, params (string Name, object Value)[] parameters)
+        {
+            var users = await QueryUsersAsync(sql, parameters);
+            return users.FirstOrDefault();
+        }
+
+        private async Task<List<User>> QueryUsersAsync(string sql, params (string Name, object Value)[] parameters)
+        {
+            var users = new List<User>();
+            var connection = _context.Database.GetDbConnection();
+            var shouldCloseConnection = connection.State != ConnectionState.Open;
+
+            if (shouldCloseConnection)
+            {
+                await connection.OpenAsync();
+            }
+
+            try
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = sql;
+
+                foreach (var (name, value) in parameters)
+                {
+                    var parameter = command.CreateParameter();
+                    parameter.ParameterName = name;
+                    parameter.Value = value;
+                    command.Parameters.Add(parameter);
+                }
+
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    users.Add(MapUser(reader));
+                }
+            }
+            finally
+            {
+                if (shouldCloseConnection)
+                {
+                    await connection.CloseAsync();
+                }
+            }
+
+            return users;
+        }
+
+        private static User MapUser(IDataRecord reader)
+        {
+            var fullName = reader["nombre"]?.ToString()?.Trim() ?? string.Empty;
+            var roleName = reader["role_name"]?.ToString()?.Trim() ?? "Usuario";
+            var roleId = reader["role_id"] == DBNull.Value ? 0 : Convert.ToInt32(reader["role_id"]);
+            var splitName = SplitName(fullName);
+
+            return new User
+            {
+                Id = Convert.ToInt32(reader["id"]),
+                Username = reader["identificacion"]?.ToString()?.Trim() ?? string.Empty,
+                Identification = reader["identificacion"]?.ToString()?.Trim() ?? string.Empty,
+                Email = reader["correo"]?.ToString()?.Trim() ?? string.Empty,
+                Name = splitName.Name,
+                LastName = splitName.LastName,
+                Password = string.Empty,
+                IsActive = true,
+                RoleId = roleId,
+                Role = new Role
+                {
+                    Id = roleId,
+                    Name = roleName,
+                    Description = roleName
+                }
+            };
+        }
+
+        private static (string Name, string LastName) SplitName(string fullName)
+        {
+            var parts = fullName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (parts.Length <= 1)
+            {
+                return (fullName, string.Empty);
+            }
+
+            return (parts[0], string.Join(' ', parts.Skip(1)));
         }
     }
 }

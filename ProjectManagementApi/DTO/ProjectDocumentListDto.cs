@@ -9,5 +9,7 @@ namespace ProjectManagementApi.DTO
         public string? TechnicalLead { get; set; }
         public string DocumentStatus { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool HasIncompleteDocumentAlert { get; set; }
+        public string? IncompleteDocumentAlertMessage { get; set; }
     }
 }
