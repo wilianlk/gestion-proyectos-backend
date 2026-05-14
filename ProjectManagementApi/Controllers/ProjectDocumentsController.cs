@@ -40,6 +40,24 @@ namespace ProjectManagementApi.Controllers
             _tokenUserService = tokenUserService;
         }
 
+        private static bool IsDocumentComplete(ProjectDocument project) =>
+            string.Equals(project.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase);
+
+        private ActionResult? EnsureDocumentEditable(ProjectDocument? project, string projectCode)
+        {
+            if (project == null)
+            {
+                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+            }
+
+            if (IsDocumentComplete(project))
+            {
+                return BadRequest(new { message = "El documento está en estado Completo y no permite más ediciones." });
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Method to create a new project document with general section (must be created first before other sections)
         /// </summary>
@@ -263,10 +281,11 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                    if (project == null)
+                    var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                    if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
-                        return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                        return lockedResponse;
                     }
 
                     await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto, currentUser);
@@ -344,9 +363,10 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                if (project == null)
+                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                if (lockedResponse != null)
                 {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                    return lockedResponse;
                 }
 
                 await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto, currentUser);
@@ -395,10 +415,11 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                    if (project == null)
+                    var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                    if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
-                        return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                        return lockedResponse;
                     }
 
                     // Update UX Cases section
@@ -515,9 +536,10 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                if (project == null)
+                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                if (lockedResponse != null)
                 {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                    return lockedResponse;
                 }
 
                 await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto, currentUser);
@@ -557,9 +579,10 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                if (project == null)
+                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                if (lockedResponse != null)
                 {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                    return lockedResponse;
                 }
 
                 await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto, currentUser);
@@ -599,9 +622,10 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                if (project == null)
+                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                if (lockedResponse != null)
                 {
-                    return NotFound(new { message = $"Project with code '{projectCode}' not found" });
+                    return lockedResponse;
                 }
 
                 await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto, currentUser);

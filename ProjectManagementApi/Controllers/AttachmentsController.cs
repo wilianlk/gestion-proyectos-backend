@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ProjectManagementApi.Context;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services;
@@ -21,16 +23,22 @@ namespace ProjectManagementApi.Controllers
         private readonly IAttachmentRepository<Attachment> _attachmentRepository;
         private readonly IFileService _fileService;
         private readonly ILogger<AttachmentsController> _logger;
+        private readonly ApplicationContext _context;
 
         public AttachmentsController(
             IAttachmentRepository<Models.Attachment> attachmentRepository,
             IFileService fileService,
-            ILogger<AttachmentsController> logger)
+            ILogger<AttachmentsController> logger,
+            ApplicationContext context)
         {
             _attachmentRepository = attachmentRepository;
             _fileService = fileService;
             _logger = logger;
+            _context = context;
         }
+
+        private static bool IsDocumentComplete(ProjectDocument project) =>
+            string.Equals(project.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// Method to download an attachment by id
@@ -83,6 +91,15 @@ namespace ProjectManagementApi.Controllers
                 if (attachment == null)
                 {
                     return NotFound(new { message = $"Attachment with id '{id}' not found" });
+                }
+
+                var project = await _context.ProjectDocuments
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == attachment.ProjectDocumentId);
+
+                if (project != null && IsDocumentComplete(project))
+                {
+                    return BadRequest(new { message = "El documento está en estado Completo y no permite eliminar adjuntos." });
                 }
 
                 await _fileService.DeleteFileAsync(attachment.FilePath);
