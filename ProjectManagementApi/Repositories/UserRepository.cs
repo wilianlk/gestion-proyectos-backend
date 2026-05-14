@@ -27,16 +27,18 @@ namespace ProjectManagementApi.Repositories
                     TRIM(sa.solicitante_identificacion) AS identificacion,
                     TRIM(sa.solicitante_nombre) AS nombre,
                     TRIM(sa.solicitante_email) AS correo,
-                    (SELECT FIRST 1 r.id
+                    (SELECT MIN(r.id)
                      FROM requisiciones_solicitantes_roles sr
                      JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_id,
-                    (SELECT FIRST 1 TRIM(r.nombre)
-                     FROM requisiciones_solicitantes_roles sr
-                     JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_name
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)) AS role_id,
+                    (SELECT TRIM(r.nombre)
+                     FROM requisiciones_roles r
+                     WHERE r.id = (
+                         SELECT MIN(r2.id)
+                         FROM requisiciones_solicitantes_roles sr2
+                         JOIN requisiciones_roles r2 ON r2.id = sr2.rol_id
+                         WHERE TRIM(sr2.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     )) AS role_name
                 FROM solicitudes_aprobaciones sa
                 WHERE sa.id = (
                         SELECT MAX(sa2.id)
@@ -64,16 +66,18 @@ namespace ProjectManagementApi.Repositories
                     TRIM(sa.solicitante_identificacion) AS identificacion,
                     TRIM(sa.solicitante_nombre) AS nombre,
                     TRIM(sa.solicitante_email) AS correo,
-                    (SELECT FIRST 1 r.id
+                    (SELECT MIN(r.id)
                      FROM requisiciones_solicitantes_roles sr
                      JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_id,
-                    (SELECT FIRST 1 TRIM(r.nombre)
-                     FROM requisiciones_solicitantes_roles sr
-                     JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_name
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)) AS role_id,
+                    (SELECT TRIM(r.nombre)
+                     FROM requisiciones_roles r
+                     WHERE r.id = (
+                         SELECT MIN(r2.id)
+                         FROM requisiciones_solicitantes_roles sr2
+                         JOIN requisiciones_roles r2 ON r2.id = sr2.rol_id
+                         WHERE TRIM(sr2.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     )) AS role_name
                 FROM solicitudes_aprobaciones sa
                 WHERE TRIM(sa.solicitante_identificacion) = @identification
                 ORDER BY sa.id DESC";
@@ -89,16 +93,18 @@ namespace ProjectManagementApi.Repositories
                     TRIM(sa.solicitante_identificacion) AS identificacion,
                     TRIM(sa.solicitante_nombre) AS nombre,
                     TRIM(sa.solicitante_email) AS correo,
-                    (SELECT FIRST 1 r.id
+                    (SELECT MIN(r.id)
                      FROM requisiciones_solicitantes_roles sr
                      JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_id,
-                    (SELECT FIRST 1 TRIM(r.nombre)
-                     FROM requisiciones_solicitantes_roles sr
-                     JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_name
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)) AS role_id,
+                    (SELECT TRIM(r.nombre)
+                     FROM requisiciones_roles r
+                     WHERE r.id = (
+                         SELECT MIN(r2.id)
+                         FROM requisiciones_solicitantes_roles sr2
+                         JOIN requisiciones_roles r2 ON r2.id = sr2.rol_id
+                         WHERE TRIM(sr2.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     )) AS role_name
                 FROM solicitudes_aprobaciones sa
                 WHERE sa.id = (
                     SELECT MAX(sa2.id)
@@ -118,16 +124,18 @@ namespace ProjectManagementApi.Repositories
                     TRIM(sa.solicitante_identificacion) AS identificacion,
                     TRIM(sa.solicitante_nombre) AS nombre,
                     TRIM(sa.solicitante_email) AS correo,
-                    (SELECT FIRST 1 r.id
+                    (SELECT MIN(r.id)
                      FROM requisiciones_solicitantes_roles sr
                      JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_id,
-                    (SELECT FIRST 1 TRIM(r.nombre)
-                     FROM requisiciones_solicitantes_roles sr
-                     JOIN requisiciones_roles r ON r.id = sr.rol_id
-                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
-                     ORDER BY r.id) AS role_name
+                     WHERE TRIM(sr.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)) AS role_id,
+                    (SELECT TRIM(r.nombre)
+                     FROM requisiciones_roles r
+                     WHERE r.id = (
+                         SELECT MIN(r2.id)
+                         FROM requisiciones_solicitantes_roles sr2
+                         JOIN requisiciones_roles r2 ON r2.id = sr2.rol_id
+                         WHERE TRIM(sr2.solicitante_identificacion) = TRIM(sa.solicitante_identificacion)
+                     )) AS role_name
                 FROM solicitudes_aprobaciones sa
                 WHERE sa.id = @id";
 

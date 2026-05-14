@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Utils;
@@ -72,6 +73,42 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error obteniendo el rol con id {Id}", id);
+                return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
+            }
+        }
+
+        [HttpPost("[action]")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<Role>> Create([FromBody] CreateRoleRequestDto request)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Name))
+                {
+                    return BadRequest(new { message = "El nombre del rol es requerido." });
+                }
+
+                var existingRole = await _roleRepository.GetByNameAsync(request.Name.Trim());
+                if (existingRole != null)
+                {
+                    return BadRequest(new { message = "Ya existe un rol con ese nombre en GestionProyectos." });
+                }
+
+                var roleToCreate = new Role
+                {
+                    Name = request.Name.Trim(),
+                    Description = request.Description?.Trim(),
+                    Application = "GestionProyectos"
+                };
+
+                var createdRole = await _roleRepository.CreateAsync(roleToCreate);
+                return StatusCode(StatusCodes.Status201Created, createdRole);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creando rol");
                 return ApiErrorResponse.BadRequest(this, ex, DefaultErrorMessage);
             }
         }

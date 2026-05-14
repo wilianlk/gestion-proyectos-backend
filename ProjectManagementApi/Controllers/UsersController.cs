@@ -185,5 +185,109 @@ namespace ProjectManagementApi.Controllers
                 }
             }
         }
+
+        /// <summary>
+        /// Assign role to user by identification
+        /// </summary>
+        [HttpPost("[action]")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> AssignRole([FromBody] AssignUserRoleRequestDto request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Identification) || request.RoleId <= 0)
+            {
+                return BadRequest(new { message = "La identificacion y el rol son obligatorios." });
+            }
+
+            var identification = request.Identification.Trim();
+            var connection = _context.Database.GetDbConnection();
+            var shouldCloseConnection = connection.State != ConnectionState.Open;
+
+            if (shouldCloseConnection)
+            {
+                await connection.OpenAsync();
+            }
+
+            DbTransaction? transaction = null;
+            try
+            {
+                transaction = await connection.BeginTransactionAsync();
+
+                using (var roleExistsCmd = connection.CreateCommand())
+                {
+                    roleExistsCmd.Transaction = transaction;
+                    roleExistsCmd.CommandText = "SELECT COUNT(1) FROM requisiciones_roles WHERE id = @roleId";
+
+                    var roleParam = roleExistsCmd.CreateParameter();
+                    roleParam.ParameterName = "@roleId";
+                    roleParam.Value = request.RoleId;
+                    roleExistsCmd.Parameters.Add(roleParam);
+
+                    var existsResult = await roleExistsCmd.ExecuteScalarAsync();
+                    var exists = existsResult != null && Convert.ToInt32(existsResult) > 0;
+                    if (!exists)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest(new { message = "El rol seleccionado no existe." });
+                    }
+                }
+
+                using (var deleteCmd = connection.CreateCommand())
+                {
+                    deleteCmd.Transaction = transaction;
+                    deleteCmd.CommandText = @"
+                        DELETE FROM requisiciones_solicitantes_roles
+                        WHERE TRIM(solicitante_identificacion) = @identification";
+
+                    var identificationParam = deleteCmd.CreateParameter();
+                    identificationParam.ParameterName = "@identification";
+                    identificationParam.Value = identification;
+                    deleteCmd.Parameters.Add(identificationParam);
+
+                    await deleteCmd.ExecuteNonQueryAsync();
+                }
+
+                using (var insertCmd = connection.CreateCommand())
+                {
+                    insertCmd.Transaction = transaction;
+                    insertCmd.CommandText = @"
+                        INSERT INTO requisiciones_solicitantes_roles (solicitante_identificacion, rol_id)
+                        VALUES (@identification, @roleId)";
+
+                    var identificationParam = insertCmd.CreateParameter();
+                    identificationParam.ParameterName = "@identification";
+                    identificationParam.Value = identification;
+                    insertCmd.Parameters.Add(identificationParam);
+
+                    var roleParam = insertCmd.CreateParameter();
+                    roleParam.ParameterName = "@roleId";
+                    roleParam.Value = request.RoleId;
+                    insertCmd.Parameters.Add(roleParam);
+
+                    await insertCmd.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+                return Ok(new { message = "Rol asignado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
+
+                _logger.LogError(ex, "Error asignando rol a usuario");
+                return ApiErrorResponse.BadRequest(this, ex, "Ocurrió un error al asignar el rol.");
+            }
+            finally
+            {
+                if (shouldCloseConnection)
+                {
+                    await connection.CloseAsync();
+                }
+            }
+        }
     }
 }

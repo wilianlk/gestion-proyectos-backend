@@ -10,5 +10,6 @@ namespace ProjectManagementApi.Repositories
         Task<IEnumerable<Role>> GetAllAsync();
         Task<Role?> GetByIdAsync(int id);
         Task<Role?> GetByNameAsync(string name);
+        Task<Role> CreateAsync(Role role);
     }
 }
