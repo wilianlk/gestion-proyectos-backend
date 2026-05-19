@@ -1,4 +1,3 @@
-using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using ProjectManagementApi.DTO;
@@ -67,13 +66,17 @@ namespace ProjectManagementApi.Controllers
                     return BadRequest(new { message = "Username and password are required" });
                 }
 
-                var user = await _userRepository.GetByUsernameAsync(dto.Username);
+                var normalizedUsername = dto.Username.Trim();
+                var normalizedPassword = dto.Password.Trim();
+                var user = await _userRepository.GetByUsernameAsync(normalizedUsername);
                 if (user == null)
                 {
                     return Unauthorized(new { message = "Invalid credentials" });
                 }
 
-                if (!Argon2.Verify(user.Password, dto.Password))
+                var expectedPassword = user.Identification?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(expectedPassword) ||
+                    !string.Equals(expectedPassword, normalizedPassword, StringComparison.Ordinal))
                 {
                     return Unauthorized(new { message = "Invalid credentials" });
                 }

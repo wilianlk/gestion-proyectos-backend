@@ -4,6 +4,17 @@
         <name>ProjectManagementApi</name>
     </assembly>
     <members>
+        <member name="T:ProjectManagementApi.Controllers.AreasController">
+            <summary>
+            Controlador para la gestión de áreas del sistema
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.AreasController.GetAll">
+            <summary>
+            Method to get all areas ordered by name
+            </summary>
+            <returns>List of all areas</returns>
+        </member>
         <member name="T:ProjectManagementApi.Controllers.AttachmentsController">
             <summary>
             Controlador para la gestión de descarga de archivos adjuntos
@@ -79,6 +90,12 @@
             </summary>
             <returns>List of project documents with section status</returns>
         </member>
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.GetDocumentKpis">
+            <summary>
+            Method to get global KPI metrics for document management
+            </summary>
+            <returns>Global KPI summary</returns>
+        </member>
         <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateArchitectureSection(System.String,ProjectManagementApi.DTO.UpdateArchitectureSectionDto,Microsoft.AspNetCore.Http.IFormFileCollection)">
             <summary>
             Method to update architecture section fields and upload attachments in a single request
@@ -96,7 +113,7 @@
             <param name="dto">General section data</param>
             <returns>Updated project</returns>
         </member>
-        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateUxCasesSection(System.String,ProjectManagementApi.DTO.UpdateUxCasesSectionDto,Microsoft.AspNetCore.Http.IFormFileCollection)">
+        <member name="M:ProjectManagementApi.Controllers.ProjectDocumentsController.UpdateUxCasesSection(System.String,ProjectManagementApi.DTO.UpdateUxCasesSectionDto,Microsoft.AspNetCore.Http.IFormFileCollection,Microsoft.AspNetCore.Http.IFormFileCollection,Microsoft.AspNetCore.Http.IFormFileCollection)">
             <summary>
             Method to update UX Cases section fields and upload attachments in a single request
             Uses database transaction to ensure data integrity - all changes are committed together or rolled back on error
@@ -178,6 +195,28 @@
             <param name="id">User id to search</param>
             <returns>User if found, 404 otherwise</returns>
         </member>
+        <member name="M:ProjectManagementApi.Controllers.UsersController.GetActiveFunctionalLeads(System.String)">
+            <summary>
+            Method to get user options from solicitudes_aprobaciones
+            </summary>
+            <param name="search">Optional search term (name, email, identification)</param>
+            <returns>List of users</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.UsersController.AssignRole(ProjectManagementApi.DTO.AssignUserRoleRequestDto)">
+            <summary>
+            Assign role to user by identification
+            </summary>
+        </member>
+        <member name="T:ProjectManagementApi.Repositories.AreaRepository">
+            <summary>
+            Repositorio para la gestión de áreas en la base de datos
+            </summary>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.AreaRepository.ProjectManagementApi#Repositories#IAreaRepository#GetAllOrderedAsync">
+            Description: Get all areas ordered by name
+            Input Parameters: None
+            Output Parameters: List of all areas ordered alphabetically by name
+        </member>
         <member name="T:ProjectManagementApi.Repositories.IRoleRepository">
             <summary>
             Interfaz para el repositorio de roles
@@ -193,6 +232,13 @@
             Get user by username including role information
             </summary>
             <param name="username">Username to search</param>
+            <returns>User object with Role if found</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Repositories.IUserRepository.GetByIdentificationAsync(System.String)">
+            <summary>
+            Get user by identification including role information
+            </summary>
+            <param name="identification">Identification to search</param>
             <returns>User object with Role if found</returns>
         </member>
         <member name="M:ProjectManagementApi.Repositories.IUserRepository.GetAllWithRoleAsync">
@@ -280,38 +326,7 @@
             Input Parameters: None
             Output Parameters: List of project documents
         </member>
-        <member name="T:ProjectManagementApi.Repositories.RoleRepository">
-            <summary>
-            Repositorio para la gestión de roles en la base de datos
-            </summary>
-        </member>
-        <member name="T:ProjectManagementApi.Repositories.UserRepository">
-            <summary>
-            Repositorio para la gestión de usuarios en la base de datos
-            </summary>
-        </member>
-        <member name="M:ProjectManagementApi.Repositories.UserRepository.GetByUsernameAsync(System.String)">
-            <summary>
-            Description: Get user by username including role information
-            Input Parameters: 
-                * username (string): Username to search
-            Output Parameters: User object with Role if found, null otherwise
-            </summary>
-        </member>
-        <member name="M:ProjectManagementApi.Repositories.UserRepository.GetAllWithRoleAsync">
-            <summary>
-            Get all users including role information
-            </summary>
-            <returns>List of all users with their associated Role</returns>
-        </member>
-        <member name="M:ProjectManagementApi.Repositories.UserRepository.GetByIdWithRoleAsync(System.Int32)">
-            <summary>
-            Get user by id including role information
-            </summary>
-            <param name="id">Unique identifier of the user to search</param>
-            <returns>User object with its associated Role if found, otherwise null</returns>
-        </member>
-        <member name="M:ProjectManagementApi.Services.Contracts.IFileService.UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile,System.Int32,System.String)">
+        <member name="M:ProjectManagementApi.Services.Contracts.IFileService.UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile,System.Int32,System.String,System.String)">
             <summary>
             Upload a file to the server after validation
             </summary>
@@ -345,7 +360,7 @@
             Service for file operations (upload, delete, URL generation)
             </summary>
         </member>
-        <member name="M:ProjectManagementApi.Services.FileService.UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile,System.Int32,System.String)">
+        <member name="M:ProjectManagementApi.Services.FileService.UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile,System.Int32,System.String,System.String)">
             Description: Upload a file to the server after validation
             Input Parameters: 
                  * file (IFormFile): File to upload
@@ -454,10 +469,10 @@
         </member>
         <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateRiskSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
             <summary>
-            Description: Calculate the completion status of the Risk section based on integrations
+            Description: Calculate the completion status of the Risk section based on risks
             Input Parameters: 
-                * project (ProjectDocument): Project document object containing integrations collection
-            Output Parameters: Status string - "Pendiente" if no complete integrations found, "Completo" if at least one integration has all fields filled
+                * project (ProjectDocument): Project document object containing risks collection
+            Output Parameters: Status string - "Pendiente" if no complete risks found, "Completo" if at least one risk has all fields filled
             </summary>
         </member>
         <member name="M:ProjectManagementApi.Utils.CalculateStatus.CalculateTestCaseSectionStatus(ProjectManagementApi.Models.ProjectDocument)">
@@ -470,16 +485,17 @@
         </member>
         <member name="T:ProjectManagementApi.Utils.StringSanitizer">
             <summary>
-            Utility class for sanitizing strings to ensure compatibility with Informix database
+            Utility class for sanitizing strings to ensure compatibility with Informix database.
             </summary>
         </member>
         <member name="M:ProjectManagementApi.Utils.StringSanitizer.SanitizeForInformix(System.String)">
             <summary>
-            Sanitizes text by replacing Unicode special characters with ASCII equivalents.
-            This prevents "Code-set conversion failed" errors in Informix when writing data.
+            Sanitizes text by transliterating common Unicode characters into ASCII-safe values.
+            This avoids Informix code-set conversion errors when users send accented characters,
+            smart quotes, arrows, bullets, or similar symbols.
             </summary>
-            <param name="text">Text to sanitize</param>
-            <returns>Sanitized text with Unicode characters replaced by ASCII equivalents</returns>
+            <param name="text">Text to sanitize.</param>
+            <returns>ASCII-safe text that preserves line breaks and tabs.</returns>
         </member>
     </members>
 </doc>
