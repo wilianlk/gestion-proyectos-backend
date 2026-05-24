@@ -25,3 +25,5 @@ API Web en ASP.NET Core para la gestión de menús.
 ## Notas
 
 - Ignora los archivos generados en `bin/`, `obj/` y carpetas temporales del IDE.
+- Observabilidad mínima disponible en `GET /api/Observability/ErrorDashboard` (requiere autenticación).
+- Las respuestas de error incluyen `traceId` y `category` para facilitar diagnóstico.

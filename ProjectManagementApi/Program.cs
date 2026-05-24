@@ -11,6 +11,7 @@ using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
 using ProjectManagementApi.Services;
 using ProjectManagementApi.Services.Contracts;
+using ProjectManagementApi.Utils;
 using ProjectManagementApi.Utils.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +42,36 @@ builder.Services.AddAuthentication(x =>
     {
         options.RequireHttpsMetadata = false;
         options.SaveToken = true;
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                var metrics = context.HttpContext.RequestServices.GetService<IErrorMetricsService>();
+                var category = ErrorCategoryClassifier.Classify(context.Exception, StatusCodes.Status401Unauthorized);
+                metrics?.Register(
+                    category,
+                    "JwtBearer.OnAuthenticationFailed",
+                    context.HttpContext.Request.Path,
+                    context.HttpContext.Request.Method,
+                    context.HttpContext.TraceIdentifier,
+                    StatusCodes.Status401Unauthorized,
+                    context.Exception.GetBaseException().Message);
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                var metrics = context.HttpContext.RequestServices.GetService<IErrorMetricsService>();
+                metrics?.Register(
+                    "AUTH",
+                    "JwtBearer.OnChallenge",
+                    context.HttpContext.Request.Path,
+                    context.HttpContext.Request.Method,
+                    context.HttpContext.TraceIdentifier,
+                    StatusCodes.Status401Unauthorized,
+                    context.ErrorDescription ?? context.Error ?? "Unauthorized");
+                return Task.CompletedTask;
+            }
+        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -76,6 +107,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ITokenUserService, TokenUserService>();
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();
 builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddSingleton<IErrorMetricsService, ErrorMetricsService>();
 
 builder.Services.AddAuthorization();
 
@@ -129,7 +161,18 @@ app.UseExceptionHandler(errorApp =>
 
         if (exception != null)
         {
-            logger.LogError(exception, "Unhandled exception for request {Method} {Path}", context.Request.Method, context.Request.Path);
+            var category = ErrorCategoryClassifier.Classify(exception, StatusCodes.Status500InternalServerError);
+            logger.LogError(exception, "Unhandled exception [{Category}] for request {Method} {Path} TraceId={TraceId}", category, context.Request.Method, context.Request.Path, context.TraceIdentifier);
+
+            var metrics = context.RequestServices.GetService<IErrorMetricsService>();
+            metrics?.Register(
+                category,
+                "GlobalExceptionHandler",
+                context.Request.Path,
+                context.Request.Method,
+                context.TraceIdentifier,
+                StatusCodes.Status500InternalServerError,
+                exception.GetBaseException().Message);
         }
 
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -138,9 +181,37 @@ app.UseExceptionHandler(errorApp =>
         {
             message = "Ocurrió un error al procesar la solicitud.",
             detail = exception?.GetBaseException().Message ?? "Error no identificado.",
-            traceId = context.TraceIdentifier
+            traceId = context.TraceIdentifier,
+            category = ErrorCategoryClassifier.Classify(exception, StatusCodes.Status500InternalServerError)
         });
     });
+});
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Trace-Id"] = context.TraceIdentifier;
+
+    using var scope = app.Logger.BeginScope(new Dictionary<string, object?>
+    {
+        ["TraceId"] = context.TraceIdentifier,
+        ["Path"] = context.Request.Path.Value,
+        ["Method"] = context.Request.Method
+    });
+
+    await next();
+
+    if (context.Response.StatusCode is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden)
+    {
+        var metrics = context.RequestServices.GetService<IErrorMetricsService>();
+        metrics?.Register(
+            "AUTH",
+            "StatusCodeObserver",
+            context.Request.Path,
+            context.Request.Method,
+            context.TraceIdentifier,
+            context.Response.StatusCode,
+            "Authorization failure");
+    }
 });
 
 app.UseSwagger();
