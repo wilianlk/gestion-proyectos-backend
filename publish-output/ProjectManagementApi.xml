@@ -17,7 +17,7 @@
         </member>
         <member name="T:ProjectManagementApi.Controllers.AttachmentsController">
             <summary>
-            Controlador para la gestión de descarga de archivos adjuntos
+            Controlador para la gestion de descarga de archivos adjuntos
             </summary>
         </member>
         <member name="M:ProjectManagementApi.Controllers.AttachmentsController.Download(System.Int32)">
@@ -26,6 +26,13 @@
             </summary>
             <param name="id">Attachment id to download</param>
             <returns>File stream if found, 404 otherwise</returns>
+        </member>
+        <member name="M:ProjectManagementApi.Controllers.AttachmentsController.Preview(System.Int32)">
+            <summary>
+            Method to preview an attachment by id
+            </summary>
+            <param name="id">Attachment id to preview</param>
+            <returns>Inline file stream if found, 404 otherwise</returns>
         </member>
         <member name="M:ProjectManagementApi.Controllers.AttachmentsController.Delete(System.Int32)">
             <summary>

@@ -13,7 +13,7 @@ using ProjectManagementApi.Utils;
 namespace ProjectManagementApi.Controllers
 {
     /// <summary>
-    /// Controlador para la gestión de descarga de archivos adjuntos
+    /// Controlador para la gestion de descarga de archivos adjuntos
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
@@ -65,13 +65,55 @@ namespace ProjectManagementApi.Controllers
                     return NotFound(new { message = "El archivo solicitado no existe" });
                 }
 
-                var fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
-                return File(fileBytes, attachment.ContentType ?? "application/octet-stream", attachment.FileName);
+                return PhysicalFile(
+                    fullPath,
+                    attachment.ContentType ?? "application/octet-stream",
+                    attachment.FileName,
+                    enableRangeProcessing: true
+                );
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error downloading attachment with id {Id}", id);
-                return ApiErrorResponse.BadRequest(this, ex, "Ocurrió un error al procesar la solicitud.");
+                return ApiErrorResponse.BadRequest(this, ex, "Ocurrio un error al procesar la solicitud.");
+            }
+        }
+
+        /// <summary>
+        /// Method to preview an attachment by id
+        /// </summary>
+        /// <param name="id">Attachment id to preview</param>
+        /// <returns>Inline file stream if found, 404 otherwise</returns>
+        [HttpGet("{id}/preview")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Preview(int id)
+        {
+            try
+            {
+                var attachment = await _attachmentRepository.GetByIdAsync(id);
+                if (attachment == null)
+                {
+                    return NotFound(new { message = $"Attachment with id '{id}' not found" });
+                }
+
+                var fullPath = _fileService.GetAbsoluteFilePath(attachment.FilePath);
+
+                if (!System.IO.File.Exists(fullPath))
+                {
+                    return NotFound(new { message = "El archivo solicitado no existe" });
+                }
+
+                return PhysicalFile(
+                    fullPath,
+                    attachment.ContentType ?? "application/octet-stream",
+                    enableRangeProcessing: true
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error previewing attachment with id {Id}", id);
+                return ApiErrorResponse.BadRequest(this, ex, "Ocurrio un error al procesar la solicitud.");
             }
         }
 
@@ -99,7 +141,7 @@ namespace ProjectManagementApi.Controllers
 
                 if (project != null && IsDocumentComplete(project))
                 {
-                    return BadRequest(new { message = "El documento está en estado Completo y no permite eliminar adjuntos." });
+                    return BadRequest(new { message = "El documento esta en estado Completo y no permite eliminar adjuntos." });
                 }
 
                 await _fileService.DeleteFileAsync(attachment.FilePath);
@@ -111,7 +153,7 @@ namespace ProjectManagementApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting attachment with id {Id}", id);
-                return ApiErrorResponse.BadRequest(this, ex, "Ocurrió un error al procesar la solicitud.");
+                return ApiErrorResponse.BadRequest(this, ex, "Ocurrio un error al procesar la solicitud.");
             }
         }
     }
