@@ -143,7 +143,9 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var projects = await _projectDocumentRepository.GetAllOrderedAsync();
-                var isAdmin = string.Equals(currentUser.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase);
+                var isAdmin =
+                    string.Equals(currentUser.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(currentUser.Role?.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
 
                 if (!isAdmin)
                 {
