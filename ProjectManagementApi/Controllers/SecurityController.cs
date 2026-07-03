@@ -53,12 +53,8 @@ namespace ProjectManagementApi.Controllers
                         return Unauthorized(new { message = "Invalid or expired code" });
                     }
 
-                    var ssoToken = _tokenService.GenerateToken(ssoUser);
-                    return Ok(new TokenResponseDto
-                    {
-                        Token = ssoToken,
-                        ExpiresAt = DateTime.UtcNow.AddHours(24)
-                    });
+                    var ssoTokenResponse = _tokenService.GenerateToken(ssoUser);
+                    return Ok(ssoTokenResponse);
                 }
 
                 if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
@@ -81,12 +77,8 @@ namespace ProjectManagementApi.Controllers
                     return Unauthorized(new { message = "Invalid credentials" });
                 }
 
-                var token = _tokenService.GenerateToken(user);
-                return Ok(new TokenResponseDto
-                {
-                    Token = token,
-                    ExpiresAt = DateTime.UtcNow.AddHours(24)
-                });
+                var tokenResponse = _tokenService.GenerateToken(user);
+                return Ok(tokenResponse);
             }
             catch (Exception ex)
             {

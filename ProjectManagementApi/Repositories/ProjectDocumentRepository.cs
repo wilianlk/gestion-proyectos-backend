@@ -25,9 +25,10 @@ namespace ProjectManagementApi.Repositories
         */
         public async Task<ProjectDocument> CreateAsync(CreateProjectDocumentDto dto, User user)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
             var entity = new ProjectDocument
             {
-                // Temporary unique value required because ProjectCode is NOT NULL
                 ProjectCode = $"TMP-{Guid.NewGuid():N}",
                 ProjectName = StringSanitizer.SanitizeForInformix(dto.ProjectName),
                 Sponsor = StringSanitizer.SanitizeForInformix(dto.Sponsor),
@@ -51,9 +52,10 @@ namespace ProjectManagementApi.Repositories
             _context.ProjectDocuments.Add(entity);
             await _context.SaveChangesAsync();
 
-            // Generate autoincremental code based on the DB identity
             entity.ProjectCode = $"PRJ-{entity.Id:D6}";
             await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
 
             return entity;
         }
@@ -79,48 +81,15 @@ namespace ProjectManagementApi.Repositories
         */
         public async Task<ProjectDocument?> GetByProjectCodeDetailedAsync(string projectCode)
         {
-            var result = await _context.ProjectDocuments
+            return await _context.ProjectDocuments
                 .AsNoTracking()
+                .Include(x => x.Attachments)
+                .Include(x => x.Requirements)
+                .Include(x => x.Integrations)
+                .Include(x => x.RaciActors)
+                .Include(x => x.Risks)
+                .Include(x => x.TestCases)
                 .FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
-
-            if (result == null)
-            {
-                return null;
-            }
-
-            var projectId = result.Id;
-
-            result.Attachments = await _context.Attachments
-                .AsNoTracking()
-                .Where(x => x.ProjectDocumentId == projectId)
-                .ToListAsync();
-
-            result.Requirements = await _context.ProjectDocumentRequirements
-                .AsNoTracking()
-                .Where(x => x.ProjectDocumentId == projectId)
-                .ToListAsync();
-
-            result.Integrations = await _context.ProjectDocumentIntegrations
-                .AsNoTracking()
-                .Where(x => x.ProjectDocumentId == projectId)
-                .ToListAsync();
-
-            result.RaciActors = await _context.ProjectDocumentRaciActors
-                .AsNoTracking()
-                .Where(x => x.ProjectDocumentId == projectId)
-                .ToListAsync();
-
-            result.Risks = await _context.ProjectDocumentRisks
-                .AsNoTracking()
-                .Where(x => x.ProjectDocumentId == projectId)
-                .ToListAsync();
-
-            result.TestCases = await _context.ProjectDocumentTestCases
-                .AsNoTracking()
-                .Where(x => x.ProjectDocumentId == projectId)
-                .ToListAsync();
-
-            return result;
         }
 
         /**
@@ -293,11 +262,24 @@ namespace ProjectManagementApi.Repositories
             }
         }
 
-        /**
-        * Description: Get all project documents ordered by creation date (descending)
-        * Input Parameters: None
-        * Output Parameters: List of project documents
-        */
+        public async Task<Dictionary<int, ProjectDocument>> GetDetailedByIdsAsync(IEnumerable<int> ids)
+        {
+            var idList = ids.ToList();
+            if (idList.Count == 0)
+                return new Dictionary<int, ProjectDocument>();
+
+            return await _context.ProjectDocuments
+                .AsNoTracking()
+                .Where(x => idList.Contains(x.Id))
+                .Include(x => x.Attachments)
+                .Include(x => x.Requirements)
+                .Include(x => x.Integrations)
+                .Include(x => x.RaciActors)
+                .Include(x => x.Risks)
+                .Include(x => x.TestCases)
+                .ToDictionaryAsync(x => x.Id);
+        }
+
         public async Task<List<ProjectDocument>> GetAllOrderedAsync()
         {
             return await _context.ProjectDocuments

@@ -40,24 +40,6 @@ namespace ProjectManagementApi.Controllers
             _tokenUserService = tokenUserService;
         }
 
-        private static bool IsDocumentComplete(ProjectDocument project) =>
-            string.Equals(project.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase);
-
-        private ActionResult? EnsureDocumentEditable(ProjectDocument? project, string projectCode)
-        {
-            if (project == null)
-            {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-            }
-
-            if (IsDocumentComplete(project))
-            {
-                return BadRequest(new { message = "El documento está en estado Completo y no permite más ediciones." });
-            }
-
-            return null;
-        }
-
         /// <summary>
         /// Method to create a new project document with general section (must be created first before other sections)
         /// </summary>
@@ -157,40 +139,37 @@ namespace ProjectManagementApi.Controllers
                         .ToList();
                 }
 
+                var completedIds = projects
+                    .Where(p => string.Equals(p.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase))
+                    .Select(p => p.Id)
+                    .ToList();
+
+                var detailedByIds = await _projectDocumentRepository.GetDetailedByIdsAsync(completedIds);
+
                 var result = new List<ProjectDocumentListDto>();
 
                 foreach (var project in projects)
                 {
                     var dto = MapToList.MapToListDto(project);
-                    var isMarkedAsComplete = string.Equals(project.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase);
-                    if (!isMarkedAsComplete)
-                    {
-                        result.Add(dto);
-                        continue;
-                    }
 
-                    var detailedProject = await _projectDocumentRepository.GetByProjectCodeDetailedAsync(project.ProjectCode);
-                    if (detailedProject == null)
+                    if (detailedByIds.TryGetValue(project.Id, out var detailedProject))
                     {
-                        result.Add(dto);
-                        continue;
-                    }
+                        var hasIncompleteSection =
+                            !string.Equals(CalculateStatus.CalculateGeneralSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateArchitectureSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateUxCasesSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateConstraintsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateRaciSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateRequirementsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateIntegrationsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateRiskSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(CalculateStatus.CalculateTestCaseSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase);
 
-                    var hasIncompleteSection =
-                        !string.Equals(CalculateStatus.CalculateGeneralSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateArchitectureSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateUxCasesSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateConstraintsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateRaciSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateRequirementsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateIntegrationsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateRiskSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(CalculateStatus.CalculateTestCaseSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase);
-
-                    if (hasIncompleteSection)
-                    {
-                        dto.HasIncompleteDocumentAlert = true;
-                        dto.IncompleteDocumentAlertMessage = "Documento marcado como completo con secciones incompletas.";
+                        if (hasIncompleteSection)
+                        {
+                            dto.HasIncompleteDocumentAlert = true;
+                            dto.IncompleteDocumentAlertMessage = "Documento marcado como completo con secciones incompletas.";
+                        }
                     }
 
                     result.Add(dto);
@@ -283,7 +262,7 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                    var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
                     if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
@@ -365,7 +344,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -417,7 +396,7 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                    var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
                     if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
@@ -538,7 +517,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -581,7 +560,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -624,7 +603,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                var lockedResponse = EnsureDocumentEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;

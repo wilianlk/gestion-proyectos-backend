@@ -54,24 +54,6 @@ namespace ProjectManagementApi.Controllers
             _tokenUserService = tokenUserService;
         }
 
-        private static bool IsDocumentComplete(ProjectDocument project) =>
-            string.Equals(project.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase);
-
-        private ActionResult? EnsureDocumentEditable(ProjectDocument? project, string projectCode)
-        {
-            if (project == null)
-            {
-                return NotFound(new { message = $"Project with code '{projectCode}' not found" });
-            }
-
-            if (IsDocumentComplete(project))
-            {
-                return BadRequest(new { message = "El documento está en estado Completo y no permite más ediciones." });
-            }
-
-            return null;
-        }
-
         /// <summary>
         /// Method to create or update requerimientos for a project document
         /// </summary>
@@ -105,7 +87,7 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                    var lockedResponse = EnsureDocumentEditable(project, dto.ProjectCode);
+                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
                     if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
@@ -225,7 +207,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = EnsureDocumentEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -291,7 +273,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = EnsureDocumentEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -361,7 +343,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = EnsureDocumentEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -433,7 +415,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = EnsureDocumentEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
                 if (lockedResponse != null)
                 {
                     return lockedResponse;

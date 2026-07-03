@@ -9,7 +9,7 @@ namespace ProjectManagementApi.Services.Contracts
         /// Generate a JWT token for a user
         /// </summary>
         /// <param name="user">User object</param>
-        /// <returns>JWT token string</returns>
-        string GenerateToken(Models.User user);
+        /// <returns>Token response with token string and expiration date</returns>
+        DTO.TokenResponseDto GenerateToken(Models.User user);
     }
 }

@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using ProjectManagementApi.Services.Contracts;
 
 namespace ProjectManagementApi.Services
@@ -12,12 +13,14 @@ namespace ProjectManagementApi.Services
     public class FileService : IFileService
     {
         private readonly IFileValidationService _validationService;
+        private readonly ILogger<FileService> _logger;
         private readonly string _uploadsRootPath;
         private readonly string _projectDocumentsPath;
 
-        public FileService(IWebHostEnvironment environment, IFileValidationService validationService)
+        public FileService(IWebHostEnvironment environment, IFileValidationService validationService, ILogger<FileService> logger)
         {
             _validationService = validationService;
+            _logger = logger;
             _uploadsRootPath = Path.Combine(AppContext.BaseDirectory, "uploads");
             _projectDocumentsPath = Path.Combine(_uploadsRootPath, "project-documents");
 
@@ -80,8 +83,9 @@ namespace ProjectManagementApi.Services
                 }
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error eliminando el archivo {FilePath}", filePath);
                 return false;
             }
         }

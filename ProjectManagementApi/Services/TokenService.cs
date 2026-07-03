@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using ProjectManagementApi.DTO;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Services.Contracts;
 using ProjectManagementApi.Utils.Helpers;
@@ -34,7 +35,7 @@ namespace ProjectManagementApi.Services
         ///     * user (User): User object containing user information
         /// Output Parameters: JWT token string
         /// </summary>
-        public string GenerateToken(User user)
+        public TokenResponseDto GenerateToken(User user)
         {
             ClaimsIdentity claims = new ClaimsIdentity();
 
@@ -62,19 +63,25 @@ namespace ProjectManagementApi.Services
             SigningCredentials signingCredentials =
                 new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256Signature);
 
+            var expiresAt = DateTime.UtcNow.AddHours(_appSettings.Jwt.Expired);
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Issuer = _appSettings.Jwt.Issuer,
                 Audience = _appSettings.Jwt.Audience,
                 Subject = claims,
-                Expires = DateTime.Now.AddHours(_appSettings.Jwt.Expired),
+                Expires = expiresAt,
                 SigningCredentials = signingCredentials
             };
 
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            
-            return tokenHandler.WriteToken(token);
+
+            return new TokenResponseDto
+            {
+                Token = tokenHandler.WriteToken(token),
+                ExpiresAt = expiresAt
+            };
         }
     }
 }

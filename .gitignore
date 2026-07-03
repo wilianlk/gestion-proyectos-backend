@@ -44,7 +44,11 @@ Thumbs.db
 
 # Publish output
 publish/
+publish-output/
 wwwroot/
+
+# Application logs
+Logs/
 
 # JetBrains Rider caches
 .idea/
