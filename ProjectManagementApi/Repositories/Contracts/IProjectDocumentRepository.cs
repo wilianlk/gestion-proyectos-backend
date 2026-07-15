@@ -18,5 +18,6 @@ namespace ProjectManagementApi.Repositories
         public Task UpdateRaciSectionAsync(string projectCode, UpdateRaciSectionDto dto, User user);
         public Task<List<ProjectDocument>> GetAllOrderedAsync();
         public Task<Dictionary<int, ProjectDocument>> GetDetailedByIdsAsync(IEnumerable<int> ids);
+        public Task<Dictionary<int, ProjectDocumentCompletionSnapshot>> GetCompletionSnapshotsByIdsAsync(IEnumerable<int> ids);
     }
 }

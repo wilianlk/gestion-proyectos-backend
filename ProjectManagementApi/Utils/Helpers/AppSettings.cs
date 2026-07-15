@@ -22,3 +22,4 @@ public class FileUpload
     public List<string> AllowedExtensions { get; set; }
     public List<string> AllowedContentTypes { get; set; }
 }
+

@@ -81,15 +81,54 @@ namespace ProjectManagementApi.Repositories
         */
         public async Task<ProjectDocument?> GetByProjectCodeDetailedAsync(string projectCode)
         {
-            return await _context.ProjectDocuments
+            var project = await _context.ProjectDocuments
                 .AsNoTracking()
-                .Include(x => x.Attachments)
-                .Include(x => x.Requirements)
-                .Include(x => x.Integrations)
-                .Include(x => x.RaciActors)
-                .Include(x => x.Risks)
-                .Include(x => x.TestCases)
                 .FirstOrDefaultAsync(x => x.ProjectCode == projectCode);
+
+            if (project == null)
+            {
+                return null;
+            }
+
+            // Load child collections independently to avoid a large cartesian join
+            // when a project has many attachments and matrix rows.
+            project.Attachments = await _context.Attachments
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == project.Id)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            project.Requirements = await _context.ProjectDocumentRequirements
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == project.Id)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            project.Integrations = await _context.ProjectDocumentIntegrations
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == project.Id)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            project.RaciActors = await _context.ProjectDocumentRaciActors
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == project.Id)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            project.Risks = await _context.ProjectDocumentRisks
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == project.Id)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            project.TestCases = await _context.ProjectDocumentTestCases
+                .AsNoTracking()
+                .Where(x => x.ProjectDocumentId == project.Id)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            return project;
         }
 
         /**
@@ -277,6 +316,83 @@ namespace ProjectManagementApi.Repositories
                 .Include(x => x.RaciActors)
                 .Include(x => x.Risks)
                 .Include(x => x.TestCases)
+                .ToDictionaryAsync(x => x.Id);
+        }
+
+        public async Task<Dictionary<int, ProjectDocumentCompletionSnapshot>> GetCompletionSnapshotsByIdsAsync(IEnumerable<int> ids)
+        {
+            var idList = ids.ToList();
+            if (idList.Count == 0)
+            {
+                return new Dictionary<int, ProjectDocumentCompletionSnapshot>();
+            }
+
+            return await _context.ProjectDocuments
+                .AsNoTracking()
+                .Where(x => idList.Contains(x.Id))
+                .Select(x => new ProjectDocumentCompletionSnapshot
+                {
+                    Id = x.Id,
+                    ProjectName = x.ProjectName,
+                    Sponsor = x.Sponsor,
+                    FunctionalLead = x.FunctionalLead,
+                    TechnicalLead = x.TechnicalLead,
+                    DocumentStatus = x.DocumentStatus,
+                    ProjectVision = x.ProjectVision,
+                    GeneralObjective = x.GeneralObjective,
+                    SpecificObjectives = x.SpecificObjectives,
+                    Scope = x.Scope,
+                    Exclusions = x.Exclusions,
+                    SolutionDescription = x.SolutionDescription,
+                    SoftwareStack = x.SoftwareStack,
+                    SecurityControl = x.SecurityControl,
+                    HardwareArchitecture = x.HardwareArchitecture,
+                    HasArchitectureAttachment = x.Attachments.Any(a =>
+                        a.Section != null &&
+                        a.Section.Trim().ToLower() == "architecture"),
+                    HasUseCasesAttachment = x.Attachments.Any(a =>
+                        a.Section == "UxCasesUseCases" || a.Section == "UxCases"),
+                    HasUxAttachment = x.Attachments.Any(a =>
+                        a.Section == "UxCasesExperienceDesignMockups" || a.Section == "UxCases"),
+                    EstimatedBudget = x.EstimatedBudget,
+                    TargetDate = x.TargetDate,
+                    TechnicalConstraints = x.TechnicalConstraints,
+                    BusinessConstraints = x.BusinessConstraints,
+                    RegulationsCompliance = x.RegulationsCompliance,
+                    HasCompleteRaciActor = x.RaciActors.Any(actor =>
+                        actor.Activity != null && actor.Activity != "" &&
+                        actor.Type != null && actor.Type != "" &&
+                        actor.Area != null && actor.Area != "" &&
+                        actor.Role != null && actor.Role != ""),
+                    HasAnyRequirementData = x.Requirements.Any(r =>
+                        (r.Code != null && r.Code != "") ||
+                        (r.Description != null && r.Description != "") ||
+                        (r.Type != null && r.Type != "") ||
+                        (r.Priority != null && r.Priority != "") ||
+                        (r.AcceptanceCriteria != null && r.AcceptanceCriteria != "")),
+                    HasCompleteRequirement = x.Requirements.Any(r =>
+                        r.Code != null && r.Code != "" &&
+                        r.Description != null && r.Description != "" &&
+                        r.Type != null && r.Type != "" &&
+                        r.Priority != null && r.Priority != "" &&
+                        r.AcceptanceCriteria != null && r.AcceptanceCriteria != ""),
+                    HasAnyIntegrationData = x.Integrations.Any(i =>
+                        (i.System != null && i.System != "") ||
+                        (i.Description != null && i.Description != "")),
+                    HasCompleteIntegration = x.Integrations.Any(i =>
+                        i.System != null && i.System != "" &&
+                        i.Description != null && i.Description != ""),
+                    HasCompleteRisk = x.Risks.Any(r =>
+                        r.Risk != null && r.Risk != "" &&
+                        r.Impact != null && r.Impact != "" &&
+                        r.Probability != null && r.Probability != "" &&
+                        r.Mitigation != null && r.Mitigation != "" &&
+                        r.Owner != null && r.Owner != ""),
+                    HasCompleteTestCase = x.TestCases.Any(t =>
+                        t.TestStrategy != null && t.TestStrategy != "" &&
+                        t.AcceptanceCriteria != null && t.AcceptanceCriteria != "" &&
+                        t.DeployProductionCriteria != null && t.DeployProductionCriteria != "")
+                })
                 .ToDictionaryAsync(x => x.Id);
         }
 

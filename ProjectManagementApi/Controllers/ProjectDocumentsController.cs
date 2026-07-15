@@ -114,37 +114,98 @@ namespace ProjectManagementApi.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<List<ProjectDocumentListDto>>> GetAll()
+        public async Task<ActionResult<PagedResponseDto<ProjectDocumentListDto>>> GetAll(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? projectCode = null,
+            [FromQuery] string? projectName = null,
+            [FromQuery] string? sponsor = null,
+            [FromQuery] string? technicalLead = null,
+            [FromQuery] string? documentStatus = null)
         {
             try
             {
+                page = Math.Max(page, 1);
+                pageSize = Math.Clamp(pageSize, 5, 100);
+
                 var currentUser = await _tokenUserService.GetCurrentUser(User);
                 if (currentUser == null)
                 {
                     return Unauthorized(new { message = "User information not found in token" });
                 }
 
-                var projects = await _projectDocumentRepository.GetAllOrderedAsync();
                 var isAdmin =
                     string.Equals(currentUser.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(currentUser.Role?.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
 
+                var query = _context.ProjectDocuments
+                    .AsNoTracking()
+                    .Select(x => new ProjectDocument
+                    {
+                        Id = x.Id,
+                        ProjectCode = x.ProjectCode,
+                        ProjectName = x.ProjectName,
+                        Sponsor = x.Sponsor,
+                        TechnicalLead = x.TechnicalLead,
+                        DocumentStatus = x.DocumentStatus,
+                        CreatedAt = x.CreatedAt,
+                        Identification = x.Identification,
+                        Username = x.Username,
+                        CreatedBy = x.CreatedBy
+                    });
+
                 if (!isAdmin)
                 {
-                    projects = projects
-                        .Where(p =>
-                            string.Equals(p.Identification, currentUser.Identification, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(p.Username, currentUser.Username, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(p.CreatedBy, currentUser.Username, StringComparison.OrdinalIgnoreCase))
-                        .ToList();
+                    query = query.Where(p =>
+                        p.Identification == currentUser.Identification ||
+                        p.Username == currentUser.Username ||
+                        p.CreatedBy == currentUser.Username);
                 }
+
+                if (!string.IsNullOrWhiteSpace(projectCode))
+                {
+                    var term = projectCode.Trim().ToUpper();
+                    query = query.Where(p => p.ProjectCode != null && p.ProjectCode.ToUpper().Contains(term));
+                }
+
+                if (!string.IsNullOrWhiteSpace(projectName))
+                {
+                    var term = projectName.Trim().ToUpper();
+                    query = query.Where(p => p.ProjectName != null && p.ProjectName.ToUpper().Contains(term));
+                }
+
+                if (!string.IsNullOrWhiteSpace(sponsor))
+                {
+                    var term = sponsor.Trim().ToUpper();
+                    query = query.Where(p => p.Sponsor != null && p.Sponsor.ToUpper().Contains(term));
+                }
+
+                if (!string.IsNullOrWhiteSpace(technicalLead))
+                {
+                    var term = technicalLead.Trim().ToUpper();
+                    query = query.Where(p => p.TechnicalLead != null && p.TechnicalLead.ToUpper().Contains(term));
+                }
+
+                if (!string.IsNullOrWhiteSpace(documentStatus))
+                {
+                    var term = documentStatus.Trim().ToUpper();
+                    query = query.Where(p => p.DocumentStatus != null && p.DocumentStatus.ToUpper().Contains(term));
+                }
+
+                var total = await query.CountAsync();
+
+                var projects = await query
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
 
                 var completedIds = projects
                     .Where(p => string.Equals(p.DocumentStatus, "Completo", StringComparison.OrdinalIgnoreCase))
                     .Select(p => p.Id)
                     .ToList();
 
-                var detailedByIds = await _projectDocumentRepository.GetDetailedByIdsAsync(completedIds);
+                var completionSnapshots = await _projectDocumentRepository.GetCompletionSnapshotsByIdsAsync(completedIds);
 
                 var result = new List<ProjectDocumentListDto>();
 
@@ -152,20 +213,9 @@ namespace ProjectManagementApi.Controllers
                 {
                     var dto = MapToList.MapToListDto(project);
 
-                    if (detailedByIds.TryGetValue(project.Id, out var detailedProject))
+                    if (completionSnapshots.TryGetValue(project.Id, out var completionSnapshot))
                     {
-                        var hasIncompleteSection =
-                            !string.Equals(CalculateStatus.CalculateGeneralSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateArchitectureSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateUxCasesSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateConstraintsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateRaciSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateRequirementsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateIntegrationsSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateRiskSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase) ||
-                            !string.Equals(CalculateStatus.CalculateTestCaseSectionStatus(detailedProject), "Completo", StringComparison.OrdinalIgnoreCase);
-
-                        if (hasIncompleteSection)
+                        if (ProjectDocumentListAlertEvaluator.HasIncompleteSection(completionSnapshot))
                         {
                             dto.HasIncompleteDocumentAlert = true;
                             dto.IncompleteDocumentAlertMessage = "Documento marcado como completo con secciones incompletas.";
@@ -175,7 +225,16 @@ namespace ProjectManagementApi.Controllers
                     result.Add(dto);
                 }
 
-                return Ok(result);
+                var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
+
+                return Ok(new PagedResponseDto<ProjectDocumentListDto>
+                {
+                    Items = result,
+                    Total = total,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = totalPages
+                });
             }
             catch (Exception ex)
             {
