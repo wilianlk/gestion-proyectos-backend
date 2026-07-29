@@ -54,9 +54,9 @@ pipeline {
                     $appCmd      = Join-Path $env:windir "System32\\inetsrv\\appcmd.exe"
                     $dest        = "C:\\Users\\admcliente\\Documents\\GestionProyectos"
                     $zip         = Join-Path $env:WORKSPACE $env:ARTIFACT
-                    $backupRoot  = "C:\\Users\\admcliente\\Documents\\GestionProyectos\\_backup"
+                    $backupRoot  = "C:\\Users\\admcliente\\Documents\\Publicacion"
                     $stamp       = Get-Date -Format "yyyyMMdd_HHmmss"
-                    $currentBackup = Join-Path $backupRoot ("Publicacion_" + $stamp)
+                    $currentBackup = Join-Path $backupRoot ("GestionProyectos_" + $stamp)
                     $tempConfig  = Join-Path $env:TEMP ("gestionproyectos_cfg_" + $stamp)
                     $configFiles = @("appsettings.json", "appsettings.Development.json")
 
