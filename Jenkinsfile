@@ -69,9 +69,12 @@ pipeline {
                             $cfgPath = Join-Path $dest $cfg
                             if (Test-Path $cfgPath) { Copy-Item $cfgPath (Join-Path $tempConfig $cfg) -Force }
                         }
+                        # Backup completo de seguridad (no se usa para restaurar automaticamente,
+                        # solo queda disponible por si hay que recuperar algo manualmente).
                         Copy-Item -Path $dest -Destination $currentBackup -Recurse -Force
-                        Get-ChildItem -Path $dest -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
                     }
+                    # Extraer ENCIMA sin borrar la carpeta primero (evita perder wwwroot, lo
+                    # despliega el job de frontend aparte, y otro contenido no versionado).
                     Expand-Archive -Path $zip -DestinationPath $dest -Force
                     if (Test-Path $tempConfig) {
                         foreach ($cfg in $configFiles) {
@@ -87,6 +90,11 @@ pipeline {
     }
 
     post {
+        always {
+            // El zip ya quedo preservado por archiveArtifacts; esta copia en el
+            // workspace solo se usaba para el despliegue y no debe quedar.
+            bat "if exist ${env.ARTIFACT} del /f /q ${env.ARTIFACT}"
+        }
         success {
             echo 'Build y despliegue completados con exito.'
             emailext(
