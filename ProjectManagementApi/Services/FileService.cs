@@ -17,11 +17,15 @@ namespace ProjectManagementApi.Services
         private readonly string _uploadsRootPath;
         private readonly string _projectDocumentsPath;
 
-        public FileService(IWebHostEnvironment environment, IFileValidationService validationService, ILogger<FileService> logger)
+        public FileService(IWebHostEnvironment environment, IFileValidationService validationService, ILogger<FileService> logger, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             _validationService = validationService;
             _logger = logger;
-            _uploadsRootPath = Path.Combine(AppContext.BaseDirectory, "uploads");
+            // Fuera del arbol de deploy para que no se pierda ni se duplique en cada
+            // build (ver Storage:UploadsRoot en appsettings). Si no esta configurado,
+            // cae al comportamiento anterior para no romper el entorno local.
+            _uploadsRootPath = configuration["Storage:UploadsRoot"]
+                ?? Path.Combine(AppContext.BaseDirectory, "uploads");
             _projectDocumentsPath = Path.Combine(_uploadsRootPath, "project-documents");
 
             Directory.CreateDirectory(_projectDocumentsPath);
