@@ -270,4 +270,6 @@ if (hasSpaBuild)
     app.MapFallbackToFile("index.html");
 }
 
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy" })).AllowAnonymous();
+
 app.Run();
