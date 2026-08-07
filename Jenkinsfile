@@ -71,7 +71,9 @@ pipeline {
                         }
                         # Backup completo de seguridad (no se usa para restaurar automaticamente,
                         # solo queda disponible por si hay que recuperar algo manualmente).
-                        Copy-Item -Path $dest -Destination $currentBackup -Recurse -Force
+                        # Se excluye uploads: son adjuntos de usuario que no cambian con el deploy,
+                        # no tiene sentido duplicarlos en cada build.
+                        robocopy $dest $currentBackup /E /XD uploads /R:1 /W:1 | Out-Null
                     }
                     # Extraer ENCIMA sin borrar la carpeta primero (evita perder wwwroot, lo
                     # despliega el job de frontend aparte, y otro contenido no versionado).
