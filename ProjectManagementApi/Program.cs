@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
+using ProjectManagementApi.Configuration;
 using ProjectManagementApi.Context;
 using ProjectManagementApi.Models;
 using ProjectManagementApi.Repositories;
@@ -15,6 +19,13 @@ using ProjectManagementApi.Utils;
 using ProjectManagementApi.Utils.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var tracingOptions = builder.Configuration.GetSection(TracingOptions.SectionName).Get<TracingOptions>() ?? new TracingOptions();
+var metricsOptions = builder.Configuration.GetSection(MetricsOptions.SectionName).Get<MetricsOptions>() ?? new MetricsOptions();
+var enableConsoleTracingExporter = tracingOptions.EnableConsoleExporter;
+var hasOtlpTracingEndpoint = !string.IsNullOrWhiteSpace(tracingOptions.OtlpEndpoint);
+var enableConsoleMetricsExporter = metricsOptions.EnableConsoleExporter;
+var hasOtlpMetricsEndpoint = !string.IsNullOrWhiteSpace(metricsOptions.OtlpEndpoint);
 
 var logsPath = Path.Combine(AppContext.BaseDirectory, "Logs");
 Directory.CreateDirectory(logsPath);
@@ -145,6 +156,85 @@ builder.Services.AddSwaggerGen(c =>
     c.IncludeXmlComments(xmlPath);
 });
 
+builder.Services.AddOptions<TracingOptions>().Bind(builder.Configuration.GetSection(TracingOptions.SectionName));
+builder.Services.AddOptions<MetricsOptions>().Bind(builder.Configuration.GetSection(MetricsOptions.SectionName));
+
+var shouldConfigureTracing = tracingOptions.Enabled && (enableConsoleTracingExporter || hasOtlpTracingEndpoint);
+var shouldConfigureMetrics = metricsOptions.Enabled && (enableConsoleMetricsExporter || hasOtlpMetricsEndpoint);
+
+if (shouldConfigureTracing || shouldConfigureMetrics)
+{
+    var telemetryBuilder = builder.Services
+        .AddOpenTelemetry()
+        .ConfigureResource(resource => resource
+            .AddService(
+                serviceName: "GestionProyectos.Api",
+                serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown",
+                serviceInstanceId: Environment.MachineName)
+            .AddAttributes(
+            [
+                new KeyValuePair<string, object>("service.namespace", "RECAMIER"),
+                new KeyValuePair<string, object>("deployment.environment", builder.Environment.EnvironmentName)
+            ]));
+
+    if (shouldConfigureTracing)
+    {
+        telemetryBuilder.WithTracing(tracing =>
+        {
+            tracing
+                .SetSampler(new TraceIdRatioBasedSampler(ClampSamplingRatio(tracingOptions.SamplingRatio)))
+                .AddAspNetCoreInstrumentation(options =>
+                {
+                    options.RecordException = true;
+                    options.Filter = httpContext => !httpContext.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
+                })
+                .AddHttpClientInstrumentation(options => options.RecordException = true);
+
+            if (enableConsoleTracingExporter)
+            {
+                tracing.AddConsoleExporter();
+            }
+
+            if (hasOtlpTracingEndpoint)
+            {
+                tracing.AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(tracingOptions.OtlpEndpoint!);
+                    if (!string.IsNullOrWhiteSpace(tracingOptions.OtlpHeaders))
+                    {
+                        options.Headers = tracingOptions.OtlpHeaders;
+                    }
+                });
+            }
+        });
+    }
+
+    if (shouldConfigureMetrics)
+    {
+        telemetryBuilder.WithMetrics(metrics =>
+        {
+            metrics.AddAspNetCoreInstrumentation().AddHttpClientInstrumentation().AddRuntimeInstrumentation();
+
+            if (enableConsoleMetricsExporter)
+            {
+                metrics.AddConsoleExporter();
+            }
+
+            if (hasOtlpMetricsEndpoint)
+            {
+                metrics.AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(metricsOptions.OtlpEndpoint!);
+                    if (!string.IsNullOrWhiteSpace(metricsOptions.OtlpHeaders))
+                    {
+                        options.Headers = metricsOptions.OtlpHeaders;
+                    }
+                });
+            }
+        });
+    }
+}
+
 var app = builder.Build();
 var hasSpaBuild = File.Exists(Path.Combine(app.Environment.WebRootPath ?? string.Empty, "index.html"));
 
@@ -273,3 +363,8 @@ if (hasSpaBuild)
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" })).AllowAnonymous();
 
 app.Run();
+
+static double ClampSamplingRatio(double ratio)
+{
+    return double.IsFinite(ratio) ? Math.Clamp(ratio, 0d, 1d) : 1d;
+}
