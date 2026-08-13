@@ -17,6 +17,7 @@ using ProjectManagementApi.Services;
 using ProjectManagementApi.Services.Contracts;
 using ProjectManagementApi.Utils;
 using ProjectManagementApi.Utils.Helpers;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,14 @@ var hasOtlpMetricsEndpoint = !string.IsNullOrWhiteSpace(metricsOptions.OtlpEndpo
 
 var logsPath = Path.Combine(AppContext.BaseDirectory, "Logs");
 Directory.CreateDirectory(logsPath);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .WriteTo.Console()
+    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 10)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Logging.AddConsole();
 ConfigurationManager configuration = builder.Configuration;
@@ -236,6 +245,9 @@ if (shouldConfigureTracing || shouldConfigureMetrics)
 }
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
+
 var hasSpaBuild = File.Exists(Path.Combine(app.Environment.WebRootPath ?? string.Empty, "index.html"));
 
 // Configure the HTTP request pipeline.
