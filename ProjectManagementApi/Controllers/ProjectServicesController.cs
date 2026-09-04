@@ -54,6 +54,9 @@ namespace ProjectManagementApi.Controllers
             _tokenUserService = tokenUserService;
         }
 
+        private static bool IsAdmin(User? user) =>
+            string.Equals(user?.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase);
+
         // =============================================
         // CONSULTA - Endpoints de lectura
         // =============================================
@@ -205,7 +208,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _requirementRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
@@ -271,7 +274,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _riskRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
@@ -334,7 +337,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _testCaseRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
@@ -393,7 +396,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _integrationRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
@@ -452,7 +455,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _raciActorRepository.DeleteByProjectCodeAsync(dto.ProjectCode);
@@ -514,7 +517,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(projectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _projectDocumentRepository.UpdateGeneralSectionAsync(projectCode, dto, currentUser);
@@ -547,7 +550,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(projectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _projectDocumentRepository.UpdateArchitectureSectionAsync(projectCode, dto, currentUser);
@@ -580,7 +583,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(projectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _projectDocumentRepository.UpdateUxCasesSectionAsync(projectCode, dto, currentUser);
@@ -613,7 +616,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(projectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _projectDocumentRepository.UpdateConstraintsSectionAsync(projectCode, dto, currentUser);
@@ -646,7 +649,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(projectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _projectDocumentRepository.UpdateAreasIntegrationsSectionAsync(projectCode, dto, currentUser);
@@ -679,7 +682,7 @@ namespace ProjectManagementApi.Controllers
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(
                     StringSanitizer.SanitizeForInformix(projectCode));
-                var guard = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var guard = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (guard != null) return guard;
 
                 await _projectDocumentRepository.UpdateRaciSectionAsync(projectCode, dto, currentUser);

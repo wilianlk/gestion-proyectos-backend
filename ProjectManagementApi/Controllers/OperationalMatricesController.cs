@@ -54,6 +54,9 @@ namespace ProjectManagementApi.Controllers
             _tokenUserService = tokenUserService;
         }
 
+        private static bool IsAdmin(User? user) =>
+            string.Equals(user?.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase);
+
         /// <summary>
         /// Method to create or update requerimientos for a project document
         /// </summary>
@@ -87,7 +90,7 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                     if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
@@ -207,7 +210,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -273,7 +276,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -343,7 +346,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -415,7 +418,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(dto.ProjectCode));
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, dto.ProjectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;

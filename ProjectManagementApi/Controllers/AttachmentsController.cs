@@ -139,9 +139,9 @@ namespace ProjectManagementApi.Controllers
                     .AsNoTracking()
                     .FirstOrDefaultAsync(x => x.Id == attachment.ProjectDocumentId);
 
-                if (project != null && IsDocumentComplete(project))
+                if (project != null && IsDocumentComplete(project) && !User.IsInRole("Admin"))
                 {
-                    return BadRequest(new { message = "El documento esta en estado Completo y no permite eliminar adjuntos." });
+                    return BadRequest(new { message = "El documento esta en estado Completo y solo un administrador puede eliminar adjuntos." });
                 }
 
                 await _fileService.DeleteFileAsync(attachment.FilePath);

@@ -24,6 +24,9 @@ namespace ProjectManagementApi.Controllers
         private readonly ITokenUserService _tokenUserService;
         private const string DefaultErrorMessage = "Ocurrió un error al procesar la solicitud.";
 
+        private static bool IsAdmin(User? user) =>
+            string.Equals(user?.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase);
+
         public ProjectDocumentsController(
             IProjectDocumentRepository<ProjectDocument> projectDocumentRepository,
             IAttachmentRepository<Attachment> attachmentRepository,
@@ -134,10 +137,6 @@ namespace ProjectManagementApi.Controllers
                     return Unauthorized(new { message = "User information not found in token" });
                 }
 
-                var isAdmin =
-                    string.Equals(currentUser.Role?.Name, "Admin", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(currentUser.Role?.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
-
                 var query = _context.ProjectDocuments
                     .AsNoTracking()
                     .Select(x => new ProjectDocument
@@ -153,14 +152,6 @@ namespace ProjectManagementApi.Controllers
                         Username = x.Username,
                         CreatedBy = x.CreatedBy
                     });
-
-                if (!isAdmin)
-                {
-                    query = query.Where(p =>
-                        p.Identification == currentUser.Identification ||
-                        p.Username == currentUser.Username ||
-                        p.CreatedBy == currentUser.Username);
-                }
 
                 if (!string.IsNullOrWhiteSpace(projectCode))
                 {
@@ -321,7 +312,7 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
+                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                     if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
@@ -403,7 +394,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -455,7 +446,7 @@ namespace ProjectManagementApi.Controllers
                     }
 
                     var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
+                    var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                     if (lockedResponse != null)
                     {
                         await transaction.RollbackAsync();
@@ -576,7 +567,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -619,7 +610,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(StringSanitizer.SanitizeForInformix(projectCode));
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
@@ -662,7 +653,7 @@ namespace ProjectManagementApi.Controllers
                 }
 
                 var project = await _projectDocumentRepository.GetByProjectCodeAsync(projectCode);
-                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode);
+                var lockedResponse = DocumentEditGuard.EnsureEditable(project, projectCode, IsAdmin(currentUser));
                 if (lockedResponse != null)
                 {
                     return lockedResponse;
