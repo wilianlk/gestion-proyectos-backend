@@ -19,6 +19,8 @@ using ProjectManagementApi.Utils;
 using ProjectManagementApi.Utils.Helpers;
 using Serilog;
 
+using Prometheus;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var tracingOptions = builder.Configuration.GetSection(TracingOptions.SectionName).Get<TracingOptions>() ?? new TracingOptions();
@@ -27,6 +29,7 @@ var enableConsoleTracingExporter = tracingOptions.EnableConsoleExporter;
 var hasOtlpTracingEndpoint = !string.IsNullOrWhiteSpace(tracingOptions.OtlpEndpoint);
 var enableConsoleMetricsExporter = metricsOptions.EnableConsoleExporter;
 var hasOtlpMetricsEndpoint = !string.IsNullOrWhiteSpace(metricsOptions.OtlpEndpoint);
+var enablePrometheusMetricsExporter = metricsOptions.EnablePrometheusExporter;
 
 var logsPath = Path.Combine(AppContext.BaseDirectory, "Logs");
 Directory.CreateDirectory(logsPath);
@@ -169,7 +172,7 @@ builder.Services.AddOptions<TracingOptions>().Bind(builder.Configuration.GetSect
 builder.Services.AddOptions<MetricsOptions>().Bind(builder.Configuration.GetSection(MetricsOptions.SectionName));
 
 var shouldConfigureTracing = tracingOptions.Enabled && (enableConsoleTracingExporter || hasOtlpTracingEndpoint);
-var shouldConfigureMetrics = metricsOptions.Enabled && (enableConsoleMetricsExporter || hasOtlpMetricsEndpoint);
+var shouldConfigureMetrics = metricsOptions.Enabled && (enableConsoleMetricsExporter || enablePrometheusMetricsExporter || hasOtlpMetricsEndpoint);
 
 if (shouldConfigureTracing || shouldConfigureMetrics)
 {
@@ -228,6 +231,10 @@ if (shouldConfigureTracing || shouldConfigureMetrics)
             {
                 metrics.AddConsoleExporter();
             }
+            if (enablePrometheusMetricsExporter)
+            {
+                metrics.AddPrometheusExporter();
+            }
 
             if (hasOtlpMetricsEndpoint)
             {
@@ -245,6 +252,7 @@ if (shouldConfigureTracing || shouldConfigureMetrics)
 }
 
 var app = builder.Build();
+app.UseHttpMetrics();
 
 app.UseSerilogRequestLogging();
 
@@ -373,6 +381,11 @@ if (hasSpaBuild)
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" })).AllowAnonymous();
+
+if (metricsOptions.Enabled && enablePrometheusMetricsExporter)
+{
+    app.MapPrometheusScrapingEndpoint("/metrics").AllowAnonymous();
+}
 
 app.Run();
 
