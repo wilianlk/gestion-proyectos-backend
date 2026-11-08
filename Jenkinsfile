@@ -4,7 +4,7 @@ pipeline {
     options {
         disableConcurrentBuilds()
         timestamps()
-        buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20'))
+        buildDiscarder(logRotator(numToKeepStr: '3', artifactNumToKeepStr: '3'))
     }
 
     triggers {
